@@ -1,0 +1,3 @@
+[submodule "vecutil"]
+	path = vecutil
+	url = https://github.com/yig/vecutil
