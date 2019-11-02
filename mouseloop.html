@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<title>WebSocket Test</title>
+<script language="javascript" type="text/javascript">
+"use strict";
+
+var avg_duration;
+var mouseloc = [ 250, 250 ];
+var canvas;
+var ctx;
+function init_canvas()
+{
+    if( canvas === undefined ) canvas = document.getElementById("canvas");
+    if( ctx === undefined ) ctx = canvas.getContext("2d");
+    
+    canvas.onmousemove = canvas_mousemoved;
+}
+
+function draw()
+{
+    ctx.clearRect( 0, 0, canvas.width, canvas.height );
+    ctx.fillStyle = '#ffd';
+    ctx.fillRect( 0, 0, canvas.width, canvas.height );
+    
+    ctx.beginPath();
+    ctx.arc( mouseloc[0], mouseloc[1], 5, 0, 2*Math.PI, 0 );
+    ctx.closePath();
+    
+    ctx.fillStyle = '#000';
+    ctx.fill();
+    ctx.stroke();
+}
+
+// The time in seconds since some arbitrary point in time.
+function now() {
+    return ( new Date().getTime() ) / 1000.;
+}
+function event_xy_in_container( evt, container )
+{
+    // The advice to use offsetLeft/Top:
+    //     http://docs.jquery.com/Tutorials:Mouse_Position
+    // is wrong.
+    // Instead, using jQuery's offset() gives the desired result:
+    // UPDATE: A modern version without jQuery from https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
+    const rect = container.getBoundingClientRect();
+    var x = evt.clientX - rect.left;
+    var y = evt.clientY - rect.top;
+    
+    return [ x, y ];
+}
+function wait( how_long )
+{
+    var start = now();
+    while( now() - start < how_long ) ;
+}
+function canvas_mousemoved( evt )
+{
+    var xy = event_xy_in_container( evt, this );
+    
+    // wait(.1);
+    
+    doSend( now() + ' mousemove ' + xy[0] + ' ' + xy[1] );
+}
+
+// Page based off of: http://www.websocket.org/echo.html
+var wsUri = "ws://localhost:9000";
+var output;
+var websocket;
+function init()
+{
+    output = document.getElementById("output");
+    testWebSocket();
+    // setInterval( function() { doSend("and rocks"); }, 1000 );
+    
+    init_canvas();
+    draw();
+}
+function testWebSocket()
+{
+    websocket = new WebSocket(wsUri);
+    websocket.onopen = function(evt) { onOpen(evt) };
+    websocket.onclose = function(evt) { onClose(evt) };
+    websocket.onmessage = function(evt) { onMessage(evt) };
+    websocket.onerror = function(evt) { onError(evt) };
+}
+function onOpen(evt) {
+    writeToScreen("CONNECTED");
+    // doSend("WebSocket rocks");
+}
+function onClose(evt)
+{
+    writeToScreen("DISCONNECTED");
+}
+function onMessage(evt) {
+    var t = now();
+    
+    var msg = evt.data;
+    var parsed = msg.split(' ');
+    var sent_t = parseFloat( parsed[0] );
+    mouseloc[0] = parseInt( parsed[2] );
+    mouseloc[1] = parseInt( parsed[3] );
+    draw();
+    
+    // It takes .001 seconds on my computer (1000 fps).
+    // This is probably just the resolution of my timer.
+    var duration = t - sent_t;
+    avg_duration = avg_duration !== undefined ? .75*avg_duration + .25*duration : duration;
+    document.getElementById('duration').innerHTML = 'avg duration: ' + avg_duration + ', duration: ' + duration;
+    
+    // writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data+'</span>');
+}
+function onError(evt) {
+    writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+}
+function doSend(message) {
+    websocket.send(message);
+    // writeToScreen("SENT: " + message);
+}
+function writeToScreen(message) {
+    var pre = document.createElement("p");
+    pre.style.wordWrap = "break-word";
+    pre.innerHTML = message;
+    output.appendChild(pre);
+}
+window.addEventListener("load", init, false);
+</script>
+<h2>WebSocket Test</h2>
+<canvas id="canvas" width="500" height="500"></canvas>
+<div id="duration"></div>
+<div id="output"></div>
+</html>
