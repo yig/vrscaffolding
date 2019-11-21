@@ -7,7 +7,7 @@ import websockets
 import json
 import beautify
 
-async def echo( websocket, path ):
+async def beautify_server( websocket, path ):
     async for message in websocket:
         print( message )
         # echo:
@@ -29,7 +29,7 @@ async def echo( websocket, path ):
         else:
             print( "Unknown command: ", command )
 
-start_server = websockets.serve( echo, "localhost", 9000 )
+start_server = websockets.serve( beautify_server, "localhost", 9000 )
 
 asyncio.get_event_loop().run_until_complete( start_server )
 asyncio.get_event_loop().run_forever()
