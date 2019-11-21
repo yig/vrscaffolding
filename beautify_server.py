@@ -16,7 +16,7 @@ async def echo( websocket, path ):
         command, body = message.split( " ", 1 )
         if command == "beautify":
             input_curve = json.loads( body )
-            ## resample every 5 pixels
+            ## resample every 10 pixels
             input_curve = beautify.resample_line_strip_arc_length( input_curve, 10 )
             
             async def send_stroke( rotations, scales ):
