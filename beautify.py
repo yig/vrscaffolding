@@ -287,10 +287,11 @@ def optimize( curve, callback = None ):
     
     import scipy.optimize
     X0 = gen_X0( curve )
-    X0 += .5*random.random( X0.shape )
+    # X0 += .5*random.random( X0.shape )
     print( "Initial rotations:", unpack( X0 )[0] )
     print( "Initial scales:", unpack( X0 )[1] )
-    res = scipy.optimize.minimize( E_closure, X0,
+    bounds = ( [(None,None)] * (len(X0)//2) ) + ( [(0.01,None)] * (len(X0) - (len(X0)//2)) )
+    res = scipy.optimize.minimize( E_closure, X0, bounds = bounds,
         ## Wrap the callback in something that passes it rotations, scales
         callback = ( lambda x: callback( *unpack( x ) ) ) if callback else None
         )

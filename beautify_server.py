@@ -19,15 +19,15 @@ async def echo( websocket, path ):
         if command == "beautify":
             input_curve = json.loads( body )
             ## resample every 5 pixels
-            input_curve = beautify.resample_line_strip_arc_length( input_curve, 5 )
+            input_curve = beautify.resample_line_strip_arc_length( input_curve, 10 )
             
-            def send_stroke( rotations, scales ):
+            async def send_stroke( rotations, scales ):
                 output_curve = beautify.transform_curve( input_curve, rotations, scales )
-                websocket.send( "curve-optimized " + json.dumps( output_curve.tolist() ) )
+                await websocket.send( "curve-optimized " + json.dumps( output_curve.tolist() ) )
             
             beautify.optimize_save_test_case( input_curve )
-            rotations, scales = beautify.optimize( input_curve, callback = send_stroke )
-            send_stroke( rotations, scales )
+            rotations, scales = beautify.optimize( input_curve )#, callback = send_stroke )
+            await send_stroke( rotations, scales )
         else:
             print( "Unknown command: ", command )
 

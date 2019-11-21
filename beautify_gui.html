@@ -164,8 +164,8 @@ function onMessage(evt) {
     
     var msg = evt.data;
     // Split the command and body of the message.
-    var command = str.substr(0,str.indexOf(' '));
-    var body = JSON.parse( str.substr(str.indexOf(' ')+1) );
+    var command = msg.substr(0,msg.indexOf(' '));
+    var body = JSON.parse( msg.substr(msg.indexOf(' ')+1) );
     
     if( command === 'curve-optimized' )
     {
