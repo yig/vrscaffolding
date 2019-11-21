@@ -7,8 +7,6 @@ import websockets
 import json
 import beautify
 
-gmessage = None
-
 async def echo( websocket, path ):
     async for message in websocket:
         print( message )
