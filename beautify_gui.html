@@ -1,34 +1,63 @@
 <!DOCTYPE html>
 <meta charset="utf-8" />
-<title>WebSocket Test</title>
+<title>Beautify</title>
 <script language="javascript" type="text/javascript">
 "use strict";
 
-var avg_duration;
-var mouseloc = [ 250, 250 ];
+var stroke_raw = [];
+var stroke_beautified = [];
 var canvas;
 var ctx;
+var dragging;
+
 function init_canvas()
 {
     if( canvas === undefined ) canvas = document.getElementById("canvas");
     if( ctx === undefined ) ctx = canvas.getContext("2d");
     
+    canvas.onmousedown = canvas_mousedown;
     canvas.onmousemove = canvas_mousemoved;
+    window.onmouseup = canvas_mouseup;
 }
 
-function draw()
+function clear_canvas()
 {
     ctx.clearRect( 0, 0, canvas.width, canvas.height );
     ctx.fillStyle = '#ffd';
     ctx.fillRect( 0, 0, canvas.width, canvas.height );
+}
+function set_linestyle( color )
+{
+    if( color === undefined ) color = '#000';
+    
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+}
+function draw_polyline( pts )
+{
+    if( pts.length < 2 ) return;
     
     ctx.beginPath();
-    ctx.arc( mouseloc[0], mouseloc[1], 5, 0, 2*Math.PI, 0 );
-    ctx.closePath();
+    ctx.moveTo( pts[0][0], pts[0][1] );
+    for( var i = 1; i < pts.length; ++i )
+    {
+        ctx.lineTo( pts[i][0], pts[i][1] );
+    }
+    // ctx.closePath();
     
-    ctx.fillStyle = '#000';
-    ctx.fill();
     ctx.stroke();
+}
+function draw()
+{
+    clear_canvas();
+    
+    set_linestyle('#000');
+    draw_polyline( stroke_raw );
+    
+    set_linestyle('#888');
+    draw_polyline( stroke_beautified );
 }
 
 // The time in seconds since some arbitrary point in time.
@@ -53,13 +82,51 @@ function wait( how_long )
     var start = now();
     while( now() - start < how_long ) ;
 }
+function canvas_mousedown( evt )
+{
+    dragging = true;
+    
+    var xy = event_xy_in_container( evt, canvas );
+    stroke_raw.push( xy );
+    
+    clear_strokes();
+}
+function canvas_mouseup( evt )
+{
+    dragging = false;
+    
+    beautify();
+}
 function canvas_mousemoved( evt )
 {
-    var xy = event_xy_in_container( evt, this );
+    if( !dragging ) return;
+    
+    var xy = event_xy_in_container( evt, canvas );
+    stroke_raw.push( xy );
+    
+    draw();
     
     // wait(.1);
     
-    doSend( now() + ' mousemove ' + xy[0] + ' ' + xy[1] );
+    // doSend( now() + ' mousemove ' + xy[0] + ' ' + xy[1] );
+}
+
+function clear_strokes()
+{
+    stroke_raw = [];
+    stroke_beautified = [];
+    
+    draw();
+}
+
+function beautify()
+{
+    send_message( 'beautify', stroke_raw );
+}
+
+function init_widgets()
+{
+    document.getElementById('clear_stroke').onclick = clear_strokes;
 }
 
 // Page based off of: http://www.websocket.org/echo.html
@@ -69,13 +136,14 @@ var websocket;
 function init()
 {
     output = document.getElementById("output");
-    testWebSocket();
-    // setInterval( function() { doSend("and rocks"); }, 1000 );
     
+    init_WebSocket();
     init_canvas();
+    init_widgets();
+    
     draw();
 }
-function testWebSocket()
+function init_WebSocket()
 {
     websocket = new WebSocket(wsUri);
     websocket.onopen = function(evt) { onOpen(evt) };
@@ -95,25 +163,26 @@ function onMessage(evt) {
     var t = now();
     
     var msg = evt.data;
-    var parsed = msg.split(' ');
-    var sent_t = parseFloat( parsed[0] );
-    mouseloc[0] = parseInt( parsed[2] );
-    mouseloc[1] = parseInt( parsed[3] );
+    // Split the command and body of the message.
+    var command = str.substr(0,str.indexOf(' '));
+    var body = JSON.parse( str.substr(str.indexOf(' ')+1) );
+    
+    if( command === 'curve-optimized' )
+    {
+        stroke_beautified = body;
+    }
+    
     draw();
     
-    // It takes .001 seconds on my computer (1000 fps).
-    // This is probably just the resolution of my timer.
-    var duration = t - sent_t;
-    avg_duration = avg_duration !== undefined ? .75*avg_duration + .25*duration : duration;
-    document.getElementById('duration').innerHTML = 'avg duration: ' + avg_duration + ', duration: ' + duration;
+    document.getElementById('status').innerHTML = 'Received command: ' + command;
     
     // writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data+'</span>');
 }
 function onError(evt) {
     writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
 }
-function doSend(message) {
-    websocket.send(message);
+function send_message( command, body ) {
+    websocket.send( command + ' ' + JSON.stringify( body ) );
     // writeToScreen("SENT: " + message);
 }
 function writeToScreen(message) {
@@ -126,6 +195,11 @@ window.addEventListener("load", init, false);
 </script>
 <h2>WebSocket Test</h2>
 <canvas id="canvas" width="500" height="500"></canvas>
-<div id="duration"></div>
+
+<div id="widgets">
+<button id="clear_stroke">Clear Stroke</button>
+</div>
+
+<div id="status"></div>
 <div id="output"></div>
 </html>
