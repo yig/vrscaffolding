@@ -306,20 +306,20 @@ def optimize( curve, save_test_case = None, callback = None ):
     return rotations, scales
 
 def optimize_save_test_case( curve, path = None ):
-    if path is None: path = 'beautify_debug.py'
+    if path is None: path = 'close_curve_debug.py'
     
     with open( path, 'w' ) as f:
         f.write( '''from __future__ import print_function, division
 from numpy import *
-import beautify
+import close_curve
 
 curve = %r
 
 print( curve )
 
-rotations, scales = beautify.optimize( curve )
+rotations, scales = close_curve.optimize( curve )
 
-curve_beautified = beautify.transform_curve( curve, rotations, scales )
+curve_beautified = close_curve.transform_curve( curve, rotations, scales )
 print( curve_beautified )
 ''' % curve )
 

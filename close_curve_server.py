@@ -5,7 +5,7 @@
 import asyncio
 import websockets
 import json
-import beautify
+import close_curve
 
 async def beautify_server( websocket, path ):
     async for message in websocket:
@@ -17,10 +17,10 @@ async def beautify_server( websocket, path ):
         if command == "beautify":
             input_curve = json.loads( body )
             ## resample every 10 pixels
-            input_curve = beautify.resample_line_strip_arc_length( input_curve, 10 )
+            input_curve = close_curve.resample_line_strip_arc_length( input_curve, 10 )
             
             async def send_stroke( rotations, scales ):
-                output_curve = beautify.transform_curve( input_curve, rotations, scales )
+                output_curve = close_curve.transform_curve( input_curve, rotations, scales )
                 await websocket.send( "curve-optimized " + json.dumps( output_curve.tolist() ) )
             
             ## Our scipy minimize() callback can't make an async call.
@@ -31,7 +31,7 @@ async def beautify_server( websocket, path ):
                 asyncio.new_event_loop().run_until_complete( send_stroke( rotations, scales ) )
             
             ## I wish I could use the callback to show progress.
-            rotations, scales = beautify.optimize( input_curve, save_test_case = True )#, callback = send_stroke_sync )
+            rotations, scales = close_curve.optimize( input_curve, save_test_case = True )#, callback = send_stroke_sync )
             await send_stroke( rotations, scales )
         else:
             print( "Unknown command: ", command )
