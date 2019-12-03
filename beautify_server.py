@@ -23,8 +23,15 @@ async def beautify_server( websocket, path ):
                 output_curve = beautify.transform_curve( input_curve, rotations, scales )
                 await websocket.send( "curve-optimized " + json.dumps( output_curve.tolist() ) )
             
-            beautify.optimize_save_test_case( input_curve )
-            rotations, scales = beautify.optimize( input_curve )#, callback = send_stroke )
+            ## Our scipy minimize() callback can't make an async call.
+            ## Let's send the curve in progress synchronously.
+            ## From: https://github.com/aaugustin/websockets/issues/71
+            ## UPDATE: Doesn't work, because we are inside an event loop.
+            def send_stroke_sync( rotations, scales ):
+                asyncio.new_event_loop().run_until_complete( send_stroke( rotations, scales ) )
+            
+            ## I wish I could use the callback to show progress.
+            rotations, scales = beautify.optimize( input_curve, save_test_case = True )#, callback = send_stroke_sync )
             await send_stroke( rotations, scales )
         else:
             print( "Unknown command: ", command )

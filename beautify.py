@@ -274,12 +274,17 @@ def E_total( curve, rotations, scales ):
         )
     return total
 
-def optimize( curve, callback = None ):
+def optimize( curve, save_test_case = None, callback = None ):
     '''
     Returns `rotations, scales` that make the curve close nicely.
     
     Apply the result with `transform_curve( curve, rotations, scales )`.
     '''
+    
+    if save_test_case is None: save_test_case = False
+    
+    ## Save a file for debugging.
+    if save_test_case: optimize_save_test_case( curve )
     
     def E_closure( X ):
         rotations, scales = unpack( X )
