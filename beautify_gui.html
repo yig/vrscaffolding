@@ -32,7 +32,7 @@ function set_linestyle( color )
     
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = color;
     ctx.lineWidth = 2;
 }
 function draw_polyline( pts )
@@ -53,10 +53,10 @@ function draw()
 {
     clear_canvas();
     
-    set_linestyle('#000');
+    set_linestyle('#888');
     draw_polyline( stroke_raw );
     
-    set_linestyle('#888');
+    set_linestyle('#000');
     draw_polyline( stroke_beautified );
 }
 
@@ -193,11 +193,18 @@ function writeToScreen(message) {
 }
 window.addEventListener("load", init, false);
 </script>
-<h2>WebSocket Test</h2>
+<h2>Intendr</h2>
 <canvas id="canvas" width="500" height="500"></canvas>
 
 <div id="widgets">
 <button id="clear_stroke">Clear Stroke</button>
+<br />
+Stroke type:
+<select id="stroke_type" name="stroke_type">
+    <option value="auto" selected>Automatic</option>
+    <option value="shape">Shape</option>
+    <option value="scaffold">Scaffold</option>
+</select>
 </div>
 
 <div id="status"></div>
