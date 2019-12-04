@@ -27,6 +27,7 @@ for message in sys.stdin:
         
         def send_stroke( rotations, scales ):
             output_curve = close_curve.transform_curve( input_curve, rotations, scales )
+            ## The extra '\n' makes sure the websocketsd message goes out.
             sys.stdout.write( "curve-optimized " + json.dumps( output_curve.tolist() ) + "\n" )
             sys.stdout.flush()
         
