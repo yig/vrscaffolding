@@ -186,7 +186,8 @@ function onError(evt) {
     writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
 }
 function send_message( command, body ) {
-    websocket.send( command + ' ' + JSON.stringify( body ) );
+    // The extra '\n' is for websocketsd.
+    websocket.send( command + ' ' + JSON.stringify( body ) + '\n' );
     // writeToScreen("SENT: " + message);
 }
 function writeToScreen(message) {
