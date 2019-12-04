@@ -9,6 +9,10 @@ Returns:
     `points`
 """
 function fit_line_segment_to_points( points; save_test_case = false )
+    if save_test_case
+        fit_line_segment_to_points_test_case( points )
+    end
+    
     @assert length( points ) >= 2
     @assert ndims( points ) == 2
     
@@ -43,6 +47,24 @@ function fit_line_segment_to_points( points; save_test_case = false )
     return segment_unrot
 end
 
+function fit_line_segment_to_points_test_case( points, path = "" )
+    if length(path) == 0
+        path = "fit_line_debug.jl"
+    end
+    
+    open( path, "w" ) do io
+        write( io, string(
+"""
+include("fit_line.jl")
+@show points = """, repr(points), "\n",
+"""
+@show segment = fit_line_segment_to_points( points )
+""" ) )
+    end
+    
+    println( "Saved: ", path )
+end
+
 function test_fit_line_segment_to_points()
     ## curve = asfarray( [ ( 0,0 ), ( 1,0 ), ( 1,1 ), ( 0,1 ), ( 0,0 ) ] )
     ## curve = [ 0 0; 2 0; 2 1; 0 1; 0 0 ]
@@ -50,7 +72,7 @@ function test_fit_line_segment_to_points()
     ## curve = random.random( ( 10, 2 ) )
     println( curve )
     
-    segment = fit_line_segment_to_points( curve )
+    segment = fit_line_segment_to_points( curve, save_test_case = true )
     println( "first:", segment[1,:] )
     println( "last:", segment[2,:] )
 end

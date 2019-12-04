@@ -171,6 +171,10 @@ function onMessage(evt) {
     {
         stroke_beautified = body;
     }
+    else
+    {
+        console.error( "Unknown WebSocket message received: ", msg );
+    }
     
     draw();
     
