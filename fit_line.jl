@@ -13,7 +13,7 @@ function fit_line_segment_to_points( points; save_test_case = false )
         fit_line_segment_to_points_test_case( points )
     end
     
-    @assert length( points ) >= 2
+    @assert size( points,1 ) >= 2
     @assert ndims( points ) == 2
     
     ## points is n-by-dimension. Make sure it's a Float.
@@ -70,11 +70,11 @@ function test_fit_line_segment_to_points()
     ## curve = [ 0 0; 2 0; 2 1; 0 1; 0 0 ]
     curve = [ 0 0; 0.1 0.1; 1 1 ]
     ## curve = random.random( ( 10, 2 ) )
-    println( curve )
+    @show curve
     
     segment = fit_line_segment_to_points( curve, save_test_case = true )
-    println( "first:", segment[1,:] )
-    println( "last:", segment[2,:] )
+    @show segment[1,:]
+    @show segment[2,:]
 end
 
 # test_fit_line_segment_to_points()

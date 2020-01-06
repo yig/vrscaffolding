@@ -5,3 +5,4 @@ __pycache__
 /beautify_debug.py
 /close_curve_debug.py
 /fit_line_debug.jl
+/fit_circle_debug.jl
