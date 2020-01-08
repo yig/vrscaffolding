@@ -32,6 +32,28 @@ function fit_circle_to_points( points; method = "kasa", save_test_case = false )
     return center, radius
 end
 
+"""
+Given:
+    points: a sequence of 2D points as an N-by-2 array.
+    center: a circle center
+    radius: a circle radius
+Returns:
+    The average distance from `points` to the circle.
+"""
+function circle_to_points_quality( points, center, radius )
+    @assert size( points,1 ) >= 2
+    @assert size( points,2 ) == 2
+    @assert ndims( points ) == 2
+    
+    @assert length( center ) == 1
+    @assert ndims( center ) == 1
+    
+    ## Points is N-by-2. Make sure it's a Float array with the right shape.
+    #points = convert( Array{Float64,2}, points )
+    
+    #return sum( sqrt( sum( ( points - center - radius ).^2, dims = 2 ) ) )
+end
+
 function fit_circle_to_points_test_case( points, path = "" )
     if length(path) == 0
         path = "fit_circle_debug.jl"
@@ -69,6 +91,11 @@ function test_fit_circle_to_points()
     center, radius = fit_circle_to_points( curve, save_test_case = true )
     @show center
     @show radius
+    
+    ## sample it 10 times
+    ts = range( 0, 2*pi, length = 11 )[1:end-1]
+    sampled = center' .+ radius * [ cos.( ts ) sin.( ts ) ]
+    @show sampled
 end
 
-test_fit_circle_to_points()
+# test_fit_circle_to_points()

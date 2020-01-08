@@ -27,3 +27,9 @@ Open `close_curve_gui.html` in a web browser.
     julia fit_line_server.jl
 
 Open `close_curve_gui.html` in a web browser.
+
+### Fit circles
+
+    julia fit_circle_server.jl
+
+Open `close_curve_gui.html` in a web browser.
