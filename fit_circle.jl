@@ -52,6 +52,7 @@ function circle_to_points_quality( points, center, radius )
     #points = convert( Array{Float64,2}, points )
     
     #return sum( sqrt( sum( ( points - center - radius ).^2, dims = 2 ) ) )
+    error( "unimplemented" )
 end
 
 function fit_circle_to_points_test_case( points, path = "" )
