@@ -1,11 +1,37 @@
 <!DOCTYPE html>
 <meta charset="utf-8" />
 <title>Beautify</title>
+<h2>Intendr</h2>
+<div id="graphics" style="width: 500px; height: 500px;">
+<canvas id="canvas" style="position: absolute; width: 500px; height: 500px"></canvas>
+<div id="retained" style="position: absolute; width: 500px; height: 500px; z-index: 1"></div>
+</div>
+
+<div id="widgets">
+<button id="clear_stroke">Clear Stroke</button>
+<br />
+Stroke type:
+<select id="stroke_type" name="stroke_type">
+    <option value="auto" selected>Automatic</option>
+    <option value="shape">Shape</option>
+    <option value="scaffold">Scaffold</option>
+</select>
+</div>
+
+<div id="status"></div>
+<div id="output"></div>
+
+<script src="js/svg-3.0.16.js"></script>
 <script language="javascript" type="text/javascript">
 "use strict";
 
+var construction_lines;
+var shape_curves;
+
 var stroke_raw = [];
 var stroke_beautified = [];
+
+var svg;
 var canvas;
 var ctx;
 var dragging;
@@ -14,6 +40,12 @@ function init_canvas()
 {
     if( canvas === undefined ) canvas = document.getElementById("canvas");
     if( ctx === undefined ) ctx = canvas.getContext("2d");
+    if( svg === undefined ) {
+        svg = SVG().addTo('#retained').size('100%', '100%');
+        construction_lines = svg.group();
+        shape_curves = svg.group();
+        svg.rect(500,500).fill('#f00');
+    }
     
     canvas.onmousedown = canvas_mousedown;
     canvas.onmousemove = canvas_mousemoved;
@@ -54,7 +86,7 @@ function draw()
     clear_canvas();
     
     set_linestyle('#888');
-    draw_polyline( stroke_raw );
+    draw_polyline( active_stroke.raw.pts );
     
     set_linestyle('#000');
     draw_polyline( stroke_beautified );
@@ -198,20 +230,3 @@ function writeToScreen(message) {
 }
 window.addEventListener("load", init, false);
 </script>
-<h2>Intendr</h2>
-<canvas id="canvas" width="500" height="500"></canvas>
-
-<div id="widgets">
-<button id="clear_stroke">Clear Stroke</button>
-<br />
-Stroke type:
-<select id="stroke_type" name="stroke_type">
-    <option value="auto" selected>Automatic</option>
-    <option value="shape">Shape</option>
-    <option value="scaffold">Scaffold</option>
-</select>
-</div>
-
-<div id="status"></div>
-<div id="output"></div>
-</html>
