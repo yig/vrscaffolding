@@ -5,7 +5,7 @@
 import asyncio
 import websockets
 import json
-import beautify
+import close_curve as beautify
 
 async def beautify_server( websocket, path ):
     async for message in websocket:

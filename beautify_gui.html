@@ -2,13 +2,15 @@
 <meta charset="utf-8" />
 <title>Beautify</title>
 <h2>Intendr</h2>
-<div id="graphics" style="width: 500px; height: 500px;">
-<canvas id="canvas" style="position: absolute; width: 500px; height: 500px"></canvas>
-<div id="retained" style="position: absolute; width: 500px; height: 500px; z-index: 1"></div>
+<div id="graphics" style="width: 500px; height: 500px; display: inline-block;">
+<canvas id="canvas" width=500 height=500 style="position: absolute; width: 500px; height: 500px; z-index: 1"></canvas>
+<div id="retained" width=500 height=500 style="position: absolute; width: 500px; height: 500px"></div>
 </div>
 
 <div id="widgets">
-<button id="clear_stroke">Clear Stroke</button>
+<button id="clear_strokes">Clear Strokes</button>
+<button id="save_stroke">Save Stroke</button>
+<button id="reconnect">Reconnect</button>
 <br />
 Stroke type:
 <select id="stroke_type" name="stroke_type">
@@ -27,6 +29,10 @@ Stroke type:
 
 var construction_lines;
 var shape_curves;
+// Maybe in the future, the active stroke can also be a manipulated SVG element
+//     polyline.points.append( path.point(x,y) );
+// See: https://stackoverflow.com/questions/25706565/how-do-i-add-coordinates-to-an-svg-polyline
+// var active_stroke;
 
 var stroke_raw = [];
 var stroke_beautified = [];
@@ -42,9 +48,10 @@ function init_canvas()
     if( ctx === undefined ) ctx = canvas.getContext("2d");
     if( svg === undefined ) {
         svg = SVG().addTo('#retained').size('100%', '100%');
+        // For debugging, draw a red square.
+        svg.rect( 500, 500 ).fill({ color: '#f00', opacity: 0.6 });
         construction_lines = svg.group();
         shape_curves = svg.group();
-        svg.rect(500,500).fill('#f00');
     }
     
     canvas.onmousedown = canvas_mousedown;
@@ -55,8 +62,8 @@ function init_canvas()
 function clear_canvas()
 {
     ctx.clearRect( 0, 0, canvas.width, canvas.height );
-    ctx.fillStyle = '#ffd';
-    ctx.fillRect( 0, 0, canvas.width, canvas.height );
+    // ctx.fillStyle = '#ffd';
+    // ctx.fillRect( 0, 0, canvas.width, canvas.height );
 }
 function set_linestyle( color )
 {
@@ -81,12 +88,21 @@ function draw_polyline( pts )
     
     ctx.stroke();
 }
+function create_polyline( parent, pts, color )
+{
+    return parent.polyline( pts ).fill('none').attr({
+        'stroke-linejoin': 'round',
+        'stroke-linecap': 'round',
+        'stroke': color,
+        'stroke-width': 2
+        });
+}
 function draw()
 {
     clear_canvas();
     
     set_linestyle('#888');
-    draw_polyline( active_stroke.raw.pts );
+    draw_polyline( stroke_raw );
     
     set_linestyle('#000');
     draw_polyline( stroke_beautified );
@@ -121,13 +137,13 @@ function canvas_mousedown( evt )
     var xy = event_xy_in_container( evt, canvas );
     stroke_raw.push( xy );
     
-    clear_strokes();
+    clear_active_stroke();
 }
 function canvas_mouseup( evt )
 {
-    dragging = false;
+    if( dragging ) beautify();
     
-    beautify();
+    dragging = false;
 }
 function canvas_mousemoved( evt )
 {
@@ -143,12 +159,17 @@ function canvas_mousemoved( evt )
     // doSend( now() + ' mousemove ' + xy[0] + ' ' + xy[1] );
 }
 
-function clear_strokes()
+function clear_active_stroke()
 {
     stroke_raw = [];
     stroke_beautified = [];
     
     draw();
+}
+function clear_saved_strokes()
+{
+    construction_lines.clear();
+    shape_curves.clear();
 }
 
 function beautify()
@@ -158,13 +179,30 @@ function beautify()
 
 function init_widgets()
 {
-    document.getElementById('clear_stroke').onclick = clear_strokes;
+    document.getElementById('clear_strokes').onclick = function() {
+        clear_active_stroke();
+        clear_saved_strokes();
+    }
+    document.getElementById('save_stroke').onclick = function() {
+        if( stroke_raw.length > 0 ) {
+            create_polyline( construction_lines, stroke_raw, '#888' ).attr({ "class": "raw" });
+        }
+        if( stroke_beautified.length > 0 ) {
+            create_polyline( construction_lines, stroke_beautified, '#000' ).attr({ "class": "beautified" });
+        }
+        
+        clear_active_stroke();
+    };
+    document.getElementById('reconnect').onclick = function() {
+        if( websocket !== null ) websocket.close();
+        init_WebSocket();
+    };
 }
 
 // Page based off of: http://www.websocket.org/echo.html
 var wsUri = "ws://localhost:9000";
 var output;
-var websocket;
+var websocket = null;
 function init()
 {
     output = document.getElementById("output");
