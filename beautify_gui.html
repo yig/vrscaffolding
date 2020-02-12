@@ -194,7 +194,7 @@ function init_widgets()
         clear_active_stroke();
     };
     document.getElementById('reconnect').onclick = function() {
-        if( websocket !== null ) websocket.close();
+        if( websocket !== null ) websocket.close( 1000, "Reconnecting." );
         init_WebSocket();
     };
 }
@@ -260,11 +260,14 @@ function send_message( command, body ) {
     websocket.send( command + ' ' + JSON.stringify( body ) + '\n' );
     // writeToScreen("SENT: " + message);
 }
+var writeToScreenCounter = 1;
 function writeToScreen(message) {
     var pre = document.createElement("p");
     pre.style.wordWrap = "break-word";
-    pre.innerHTML = message;
-    output.appendChild(pre);
+    pre.innerHTML = '<span style="color:#888">[' + writeToScreenCounter + "]</span> " + message;
+    // output.appendChild(pre);
+    output.prepend(pre);
+    writeToScreenCounter += 1;
 }
 window.addEventListener("load", init, false);
 </script>
