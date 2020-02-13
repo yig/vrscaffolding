@@ -1,6 +1,10 @@
 <!DOCTYPE html>
+<html>
+<head>
 <meta charset="utf-8" />
 <title>Beautify</title>
+</head>
+<body>
 <h2>Intendr</h2>
 <div id="graphics" style="width: 500px; height: 500px; display: inline-block;">
 <canvas id="canvas" width=500 height=500 style="position: absolute; width: 500px; height: 500px; z-index: 1"></canvas>
@@ -50,8 +54,8 @@ function init_canvas()
         svg = SVG().addTo('#retained').size('100%', '100%');
         // For debugging, draw a red square.
         svg.rect( 500, 500 ).fill({ color: '#f00', opacity: 0.6 });
-        construction_lines = svg.group();
-        shape_curves = svg.group();
+        construction_lines = svg.group().attr({'class': 'construction'});
+        shape_curves = svg.group().attr({'class': 'shape'});
     }
     
     canvas.onmousedown = canvas_mousedown;
@@ -271,3 +275,5 @@ function writeToScreen(message) {
 }
 window.addEventListener("load", init, false);
 </script>
+</body>
+</html>

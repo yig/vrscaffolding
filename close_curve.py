@@ -119,7 +119,7 @@ def resample_line_strip_arc_length( line_strip, arc_length ):
     
     ### 2
     num_samples = 1 + total_length / arc_length
-    num_samples = max( 2, num_samples )
+    num_samples = max( 2, int( round( num_samples ) ) )
     
     ### 3
     return resample_line_strip_num_samples( line_strip, num_samples )
