@@ -43,7 +43,7 @@
 				document.body.appendChild( container );
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0x505050 );
+				scene.background = new THREE.Color( 0xe0e0e0 );
 
 				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.01, 50 );
 				camera.position.set( 0, 1.6, 3 );
@@ -54,7 +54,7 @@
 
 				room = new THREE.LineSegments(
 					new BoxLineGeometry( 6, 6, 6, 10, 10, 10 ),
-					new THREE.LineBasicMaterial( { color: 0x808080 } )
+					new THREE.LineBasicMaterial( { color: 0x505050 } )
 				);
 				room.geometry.translate( 0, 3, 0 );
 				scene.add( room );
@@ -68,9 +68,11 @@
 				//
 
 				var painter1 = new TubePainter();
+				painter1.setColor( 0xe0e0ff );
 				scene.add( painter1.mesh );
 
 				var painter2 = new TubePainter();
+				painter2.setColor( 0xffe0ff );
 				scene.add( painter2.mesh );
 
 				//

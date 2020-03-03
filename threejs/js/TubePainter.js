@@ -169,6 +169,12 @@ function TubePainter() {
 		size = value;
 
 	}
+	
+	function setColor( value ) {
+
+		color = new Color( value );
+
+	}
 
 	//
 
@@ -202,6 +208,7 @@ function TubePainter() {
 		moveTo: moveTo,
 		lineTo: lineTo,
 		setSize: setSize,
+		setColor: setColor,
 		update: update
 	};
 
