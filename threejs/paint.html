@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Drawing with Scaffolds</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<div id="info">
+			Drawing with Scaffolds
+		</div>
+
+		<script src="./js/HelioWebXRPolyfill.js"></script>
+
+		<script type="module">
+
+			import * as THREE from './js/three.module.js';
+			import { OrbitControls } from './js/OrbitControls.js';
+			import { TubePainter } from './js/TubePainter.js';
+			import { VRButton } from './js/VRButton.js';
+			import { BoxLineGeometry } from './js/BoxLineGeometry.js';
+			import { XRControllerModelFactory } from './js/XRControllerModelFactory.js';
+
+			var container;
+			var camera, scene, renderer;
+			var controller1, controller2;
+			var controllerGrip1, controllerGrip2;
+			
+			var room;
+
+			var cursor = new THREE.Vector3();
+
+			var controls;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0x505050 );
+
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.01, 50 );
+				camera.position.set( 0, 1.6, 3 );
+
+				controls = new OrbitControls( camera, container );
+				controls.target.set( 0, 1.6, 0 );
+				controls.update();
+
+				room = new THREE.LineSegments(
+					new BoxLineGeometry( 6, 6, 6, 10, 10, 10 ),
+					new THREE.LineBasicMaterial( { color: 0x808080 } )
+				);
+				room.geometry.translate( 0, 3, 0 );
+				scene.add( room );
+
+				scene.add( new THREE.HemisphereLight( 0x888877, 0x777788 ) );
+
+				var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+				light.position.set( 0, 4, 0 );
+				scene.add( light );
+
+				//
+
+				var painter1 = new TubePainter();
+				scene.add( painter1.mesh );
+
+				var painter2 = new TubePainter();
+				scene.add( painter2.mesh );
+
+				//
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.xr.enabled = true;
+				container.appendChild( renderer.domElement );
+
+				document.body.appendChild( VRButton.createButton( renderer ) );
+
+				// controllers
+
+				function onSelectStart() {
+
+					this.userData.isSelecting = true;
+
+				}
+
+				function onSelectEnd() {
+
+					this.userData.isSelecting = false;
+
+				}
+
+				function onSequeezeStart() {
+
+					this.userData.isSqueezing = true;
+					this.userData.positionAtSqueezeStart = this.position.y;
+					this.userData.scaleAtSqueezeStart = this.scale.x;
+
+				}
+
+				function onSqueezeEned() {
+
+					this.userData.isSqueezing = false;
+
+				}
+
+				controller1 = renderer.xr.getController( 0 );
+				controller1.addEventListener( 'selectstart', onSelectStart );
+				controller1.addEventListener( 'selectend', onSelectEnd );
+				controller1.addEventListener( 'squeezestart', onSequeezeStart );
+				controller1.addEventListener( 'squeezeend', onSqueezeEned );
+				controller1.userData.painter = painter1;
+				scene.add( controller1 );
+
+				controller2 = renderer.xr.getController( 1 );
+				controller2.addEventListener( 'selectstart', onSelectStart );
+				controller2.addEventListener( 'selectend', onSelectEnd );
+				controller2.addEventListener( 'squeezestart', onSequeezeStart );
+				controller2.addEventListener( 'squeezeend', onSqueezeEned );
+				controller2.userData.painter = painter2;
+				scene.add( controller2 );
+
+				
+				// Add the pawn geometry for each controller.
+				// This is used in handleController() to set the cursor position.
+				var geometry = new THREE.CylinderBufferGeometry( 0.01, 0.02, 0.08, 5 );
+				geometry.rotateX( - Math.PI / 2 );
+				var material = new THREE.MeshStandardMaterial( { flatShading: true } );
+				var mesh = new THREE.Mesh( geometry, material );
+
+				var pivot = new THREE.Mesh( new THREE.IcosahedronBufferGeometry( 0.01, 2 ) );
+				pivot.name = 'pivot';
+				pivot.position.z = - 0.05;
+				mesh.add( pivot );
+
+				controller1.add( mesh.clone() );
+				controller2.add( mesh.clone() );
+				
+				
+				// The XRControllerModelFactory will automatically fetch controller models
+				// that match what the user is holding as closely as possible. The models
+				// should be attached to the object returned from getControllerGrip in
+				// order to match the orientation of the held device.
+
+				var controllerModelFactory = new XRControllerModelFactory();
+
+				controllerGrip1 = renderer.xr.getControllerGrip( 0 );
+				controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
+				scene.add( controllerGrip1 );
+
+				controllerGrip2 = renderer.xr.getControllerGrip( 1 );
+				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
+				scene.add( controllerGrip2 );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function handleController( controller ) {
+
+				var userData = controller.userData;
+				var painter = userData.painter;
+
+				var pivot = controller.getObjectByName( 'pivot' );
+
+				if ( userData.isSqueezing === true ) {
+
+					var delta = ( controller.position.y - userData.positionAtSqueezeStart ) * 5;
+					var scale = Math.max( 0.1, userData.scaleAtSqueezeStart + delta );
+
+					pivot.scale.setScalar( scale );
+					painter.setSize( scale );
+
+				}
+
+				cursor.setFromMatrixPosition( pivot.matrixWorld );
+
+				if ( userData.isSelecting === true ) {
+
+					painter.lineTo( cursor );
+					painter.update();
+
+				} else {
+
+					painter.moveTo( cursor );
+
+				}
+
+			}
+
+			function animate() {
+
+				renderer.setAnimationLoop( render );
+
+			}
+
+			function render() {
+
+				handleController( controller1 );
+				handleController( controller2 );
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>
