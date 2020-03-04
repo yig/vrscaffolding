@@ -10,6 +10,7 @@
 
 		<div id="info">
 			Drawing with Scaffolds
+			<div id="duration"></div>
 		</div>
 
 		<script src="./js/HelioWebXRPolyfill.js"></script>
@@ -22,6 +23,7 @@
 			import { VRButton } from './js/VRButton.js';
 			import { BoxLineGeometry } from './js/BoxLineGeometry.js';
 			import { XRControllerModelFactory } from './js/XRControllerModelFactory.js';
+			import { WebSocketClient } from './js/websocket-client.js';
 
 			var container;
 			var camera, scene, renderer;
@@ -33,8 +35,14 @@
 			var cursor = new THREE.Vector3();
 
 			var controls;
+			
+			var socket;
+			var avg_duration;
+			var last_durations = [];
+			var last_durations_index = 0;
 
 			init();
+			initWebSocket();
 			animate();
 
 			function init() {
@@ -167,6 +175,49 @@
 				window.addEventListener( 'resize', onWindowResize, false );
 
 			}
+			async function initWebSocket() {
+                // Let's use WebSocketClient library, which supports await: https://github.com/jcao219/websocket-async
+                // Write a websockets server using: http://websockets.readthedocs.io/en/stable/intro.html
+                socket = new WebSocketClient;
+                
+                // Socket from URL in modern JavaScript: https://stackoverflow.com/questions/979975/how-to-get-the-value-from-the-get-parameters
+                var url = new URL( window.location.href );
+                var port = 9000;
+                if( url.searchParams.has("port") ) {
+                    port = parseInt( url.searchParams.get("port") );
+                }
+                
+                await socket.connect('ws://localhost:' + port);
+                console.log( "Connected on port " + port + ": ", socket.connected );
+                
+                // The time in seconds since some arbitrary point in time.
+                function now() {
+                    return ( new Date().getTime() ) / 1000.;
+                }
+                while( true ) {
+                    const start = now();
+                    socket.send("ping");
+                    const msg = await socket.receive();
+                    const duration = now() - start;
+                    // console.log( "duration:", duration );
+                    avg_duration = avg_duration !== undefined ? .99*avg_duration + 0.01*duration : duration;
+                    // document.getElementById( 'duration' ).innerHTML = 'avg duration: ' + avg_duration.toFixed(4) + ', duration: ' + duration.toFixed(4);
+                    
+                    // Also compute the median.
+                    last_durations[ last_durations_index ] = duration;
+                    last_durations_index = ( last_durations_index + 1 ) % 11;
+                    let last_durations_sorted = last_durations.slice();
+                    last_durations_sorted.sort( (a, b) => a - b );
+                    const median = last_durations_sorted[ Math.floor( last_durations_sorted.length/2 ) ];
+                    document.getElementById( 'duration' ).innerHTML = (
+                        'avg duration: ' + avg_duration.toFixed(4)
+                        +
+                        ', median duration: ' + median.toFixed(4)
+                        +
+                        ', duration: ' + duration.toFixed(4)
+                        );
+                }
+            }
 
 			function onWindowResize() {
 

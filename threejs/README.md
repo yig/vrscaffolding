@@ -9,3 +9,7 @@ From https://developer.oculus.com/documentation/oculus-browser/browser-remote-de
 4. Under Devices > Settings, set up port forwarding from port 8000 to localhost:8000.
 5. Run a webserver on your local machine, e.g. `python3 -m http.server` in the directory you want to serve.
 6. Under Devices > Quest, click "Inspect" for the browser tab you want to debug.
+
+---
+
+To test websocket round trip with `paint.html`, also forward port 9000 and run `python3 ping.py`.
