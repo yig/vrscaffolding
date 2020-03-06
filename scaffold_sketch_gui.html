@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Scaffold Sketcher</title>
+</head>
+<body>
+<h2>Scaffold Sketcher</h2>
+<div id="graphics" style="width: 500px; height: 500px; display: inline-block;">
+<canvas id="canvas" width=500 height=500 style="position: absolute; width: 500px; height: 500px; z-index: 1"></canvas>
+<div id="retained" width=500 height=500 style="position: absolute; width: 500px; height: 500px"></div>
+</div>
+
+<div id="widgets">
+<button id="clear_strokes">Clear Strokes</button>
+<button id="save_stroke">Save Stroke</button>
+<button id="reconnect">Reconnect</button>
+<br />
+Stroke type:
+<select id="stroke_type" name="stroke_type">
+    <option value="shape">Shape</option>
+    <option value="scaffold" selected>Scaffold</option>
+</select>
+</div>
+
+<div id="status"></div>
+<div id="output"></div>
+
+<script src="js/svg-3.0.16.js"></script>
+<script language="javascript" type="text/javascript">
+"use strict";
+
+var construction_lines;
+var shape_curves;
+// Maybe in the future, the active stroke can also be a manipulated SVG element
+//     polyline.points.append( path.point(x,y) );
+// See: https://stackoverflow.com/questions/25706565/how-do-i-add-coordinates-to-an-svg-polyline
+// var active_stroke;
+
+var stroke_raw = [];
+var stroke_beautified = [];
+
+var svg;
+var canvas;
+var ctx;
+var dragging;
+
+function init_canvas()
+{
+    if( canvas === undefined ) canvas = document.getElementById("canvas");
+    if( ctx === undefined ) ctx = canvas.getContext("2d");
+    if( svg === undefined ) {
+        svg = SVG().addTo('#retained').size('100%', '100%');
+        // For debugging, draw a red square.
+        svg.rect( 500, 500 ).fill({ color: '#f00', opacity: 0.6 });
+        construction_lines = svg.group().attr({'class': 'construction'});
+        shape_curves = svg.group().attr({'class': 'shape'});
+    }
+    
+    canvas.onmousedown = canvas_mousedown;
+    canvas.onmousemove = canvas_mousemoved;
+    window.onmouseup = canvas_mouseup;
+}
+
+function clear_canvas()
+{
+    ctx.clearRect( 0, 0, canvas.width, canvas.height );
+    // ctx.fillStyle = '#ffd';
+    // ctx.fillRect( 0, 0, canvas.width, canvas.height );
+}
+function set_linestyle( color )
+{
+    if( color === undefined ) color = '#000';
+    
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+}
+function draw_polyline( pts )
+{
+    if( pts.length < 2 ) return;
+    
+    ctx.beginPath();
+    ctx.moveTo( pts[0][0], pts[0][1] );
+    for( var i = 1; i < pts.length; ++i )
+    {
+        ctx.lineTo( pts[i][0], pts[i][1] );
+    }
+    // ctx.closePath();
+    
+    ctx.stroke();
+}
+function create_polyline( parent, pts, color )
+{
+    return parent.polyline( pts ).fill('none').attr({
+        'stroke-linejoin': 'round',
+        'stroke-linecap': 'round',
+        'stroke': color,
+        'stroke-width': 2
+        });
+}
+function draw()
+{
+    clear_canvas();
+    
+    set_linestyle('#888');
+    draw_polyline( stroke_raw );
+    
+    set_linestyle('#000');
+    draw_polyline( stroke_beautified );
+}
+
+// The time in seconds since some arbitrary point in time.
+function now() {
+    return ( new Date().getTime() ) / 1000.;
+}
+function event_xy_in_container( evt, container )
+{
+    // The advice to use offsetLeft/Top:
+    //     http://docs.jquery.com/Tutorials:Mouse_Position
+    // is wrong.
+    // Instead, using jQuery's offset() gives the desired result:
+    // UPDATE: A modern version without jQuery from https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
+    const rect = container.getBoundingClientRect();
+    var x = evt.clientX - rect.left;
+    var y = evt.clientY - rect.top;
+    
+    return [ x, y ];
+}
+function wait( how_long )
+{
+    var start = now();
+    while( now() - start < how_long ) ;
+}
+function canvas_mousedown( evt )
+{
+    dragging = true;
+    
+    var xy = event_xy_in_container( evt, canvas );
+    stroke_raw.push( xy );
+    
+    clear_active_stroke();
+}
+function canvas_mouseup( evt )
+{
+    if( dragging ) beautify();
+    
+    dragging = false;
+}
+function canvas_mousemoved( evt )
+{
+    if( !dragging ) return;
+    
+    var xy = event_xy_in_container( evt, canvas );
+    stroke_raw.push( xy );
+    
+    draw();
+    
+    // wait(.1);
+    
+    // doSend( now() + ' mousemove ' + xy[0] + ' ' + xy[1] );
+}
+
+function clear_active_stroke()
+{
+    stroke_raw = [];
+    stroke_beautified = [];
+    
+    draw();
+}
+function clear_saved_strokes()
+{
+    construction_lines.clear();
+    shape_curves.clear();
+}
+
+function beautify()
+{
+    send_message( 'beautify', stroke_raw );
+}
+
+function init_widgets()
+{
+    document.getElementById('clear_strokes').onclick = function() {
+        clear_active_stroke();
+        clear_saved_strokes();
+    }
+    document.getElementById('save_stroke').onclick = function() {
+        if( stroke_raw.length > 0 ) {
+            create_polyline( construction_lines, stroke_raw, '#888' ).attr({ "class": "raw" });
+        }
+        if( stroke_beautified.length > 0 ) {
+            create_polyline( construction_lines, stroke_beautified, '#000' ).attr({ "class": "beautified" });
+        }
+        
+        clear_active_stroke();
+    };
+    document.getElementById('reconnect').onclick = function() {
+        if( websocket !== null ) websocket.close( 1000, "Reconnecting." );
+        init_WebSocket();
+    };
+}
+
+// Page based off of: http://www.websocket.org/echo.html
+var wsUri = "ws://localhost:9000";
+var output;
+var websocket = null;
+function init()
+{
+    output = document.getElementById("output");
+    
+    init_WebSocket();
+    init_canvas();
+    init_widgets();
+    
+    draw();
+}
+function init_WebSocket()
+{
+    websocket = new WebSocket(wsUri);
+    websocket.onopen = function(evt) { onOpen(evt) };
+    websocket.onclose = function(evt) { onClose(evt) };
+    websocket.onmessage = function(evt) { onMessage(evt) };
+    websocket.onerror = function(evt) { onError(evt) };
+}
+function onOpen(evt) {
+    writeToScreen("CONNECTED");
+    // doSend("WebSocket rocks");
+}
+function onClose(evt)
+{
+    writeToScreen("DISCONNECTED");
+}
+function onMessage(evt) {
+    var t = now();
+    
+    var msg = evt.data;
+    // Split the command and body of the message.
+    var command = msg.substr(0,msg.indexOf(' '));
+    var body = JSON.parse( msg.substr(msg.indexOf(' ')+1) );
+    
+    if( command === 'curve-optimized' )
+    {
+        stroke_beautified = body;
+    }
+    else
+    {
+        console.error( "Unknown WebSocket message received: ", msg );
+    }
+    
+    draw();
+    
+    document.getElementById('status').innerHTML = 'Received command: ' + command;
+    
+    // writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data+'</span>');
+}
+function onError(evt) {
+    writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+}
+function send_message( command, body ) {
+    // The extra '\n' is for websocketsd.
+    websocket.send( command + ' ' + JSON.stringify( body ) + '\n' );
+    // writeToScreen("SENT: " + message);
+}
+var writeToScreenCounter = 1;
+function writeToScreen(message) {
+    var pre = document.createElement("p");
+    pre.style.wordWrap = "break-word";
+    pre.innerHTML = '<span style="color:#888">[' + writeToScreenCounter + "]</span> " + message;
+    // output.appendChild(pre);
+    output.prepend(pre);
+    writeToScreenCounter += 1;
+}
+window.addEventListener("load", init, false);
+</script>
+</body>
+</html>

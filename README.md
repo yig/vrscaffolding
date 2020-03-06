@@ -6,6 +6,12 @@
 
 ## Running
 
+### Scaffold Sketcher
+
+    python3 scaffold_sketch_server.py
+
+Open `scaffold_sketch_gui.html` in a web browser.
+
 ### General Case
 
     python3 beautify_server.py

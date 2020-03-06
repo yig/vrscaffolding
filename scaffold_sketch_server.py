@@ -10,7 +10,7 @@ import close_curve as beautify
 import scaffold_sketch
 
 async def scaffold_sketch_server( websocket, path ):
-    state = None
+    state = scaffold_sketch.make_new_program_state()
     
     async for message in websocket:
         print( message )
