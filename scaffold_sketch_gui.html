@@ -93,14 +93,22 @@ function draw_polyline( pts )
     
     ctx.stroke();
 }
-function create_polyline( parent, pts, color )
+function create_polyline( parent, pts, style )
 {
-    return parent.polyline( pts ).fill('none').attr({
+    if( style === undefined ) style = {};
+    
+    let default_style = {
         'stroke-linejoin': 'round',
         'stroke-linecap': 'round',
-        'stroke': color,
+        'stroke': '#0f0',
         'stroke-width': 2
-        });
+        };
+    for( var k in style )
+    {
+        default_style[k] = style[k];
+    }
+    
+    return parent.polyline( pts ).fill('none').attr( default_style );
 }
 function draw()
 {
@@ -263,10 +271,10 @@ function onClose(evt)
 // I want by default, keep the drawing now to view the lines
 function keep_the_drawing(){
     // if( stroke_raw.length > 0 ) {
-    //     create_polyline( construction_lines, stroke_raw, '#888' ).attr({ "class": "raw" });
+    //     create_polyline( construction_lines, stroke_raw, {'stroke': '#888'} ).attr({ "class": "raw" });
     //     }
     if( stroke_beautified.length > 0 ) {
-        create_polyline( construction_lines, stroke_beautified, '#000' ).attr({ "class": "beautified" });
+        create_polyline( construction_lines, stroke_beautified, {'stroke': '#888'} ).attr({ "class": "beautified" });
     }
     clear_active_stroke();
 }
