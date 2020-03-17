@@ -5,18 +5,18 @@
 import asyncio
 import websockets
 import json
-import close_curve as beautify
 
 import scaffold_sketch
+import shape_sketch
 
 async def scaffold_sketch_server( websocket, path ):
     state = scaffold_sketch.make_new_program_state()
     
+    
     async for message in websocket:
-        print( message )
+        # print( message )
         # echo:
         ## await websocket.send( message )
-        
         parsed = message.split( " ", 1 )
         command = parsed[0]
         parameters = None if len( parsed ) == 1 else parsed[1]
@@ -27,6 +27,14 @@ async def scaffold_sketch_server( websocket, path ):
             input_curve = json.loads( parameters )
             new_line = scaffold_sketch.incorporate_new_raw_construction_line( state, input_curve )
             await websocket.send( "add-construction-line " + json.dumps( new_line.tolist() ) )
+            # print(state)
+        elif command == "undo":
+            # will only undo for last construction line now 
+            scaffold_sketch.undo( state )
+        elif command == "beautify":
+            input_curve = json.loads( parameters )
+            new_shape = shape_sketch.incorporate_new_raw_shape_line( state, input_curve )
+            await websocket.send( "add-shape-line " + json.dumps( new_shape.tolist() ) )
         else:
             print( "Unknown command: ", command )
 

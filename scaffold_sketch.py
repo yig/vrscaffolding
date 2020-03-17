@@ -1,5 +1,9 @@
 from __future__ import print_function, division
 
+import util
+import fit_line
+
+
 '''
 This module stores the state for the scaffold sketching program.
 The state is a dictionary with certain keys.
@@ -14,7 +18,7 @@ def make_new_program_state():
         'shape_curves'
     '''
     
-    state = { 'construction_lines': [], 'shape_curves': [] }
+    state = { 'construction_lines': [], 'shape_curves': [], 'key_points': [] }
     return state
 
 def incorporate_new_raw_construction_line( state, pts ):
@@ -36,13 +40,27 @@ def incorporate_new_raw_construction_line( state, pts ):
     
     ### 1
     ## resample every 10 pixels
-    pts = beautify.resample_line_strip_arc_length( pts, 10 )
-    line = fit_line.fit_line( pts )
+    pts = util.resample_line_strip_arc_length( pts, 10 )
+    line = fit_line.Line( pts )
     
     ### 2
-    snapped_line = snapping.snap_line_to_other_lines( line, state['construction_lines'] )
-    
+    snapped_line = fit_line.snap_line_to_other_lines( line, state['construction_lines'] )
+
     ### 3
     state['construction_lines'].append( snapped_line )
+    #print(snapped_line)
     
-    return snapped_line
+    # print("x", list(snapped_line.xy.T[0]))
+    # print("y", list(snapped_line.xy.T[1]))
+    return snapped_line.xy
+
+
+
+
+def undo( state ):
+    """
+    
+    """
+    # will only delete last construction line now
+    if len(state['construction_lines']) > 0:
+        state['construction_lines'].pop()

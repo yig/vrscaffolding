@@ -13,7 +13,7 @@
 
 <div id="widgets">
 <button id="clear_strokes">Clear Strokes</button>
-<button id="save_stroke">Save Stroke</button>
+<button id="undo_stroke">Undo Stroke</button>
 <button id="reconnect">Reconnect</button>
 <br />
 Stroke type:
@@ -44,6 +44,8 @@ var svg;
 var canvas;
 var ctx;
 var dragging;
+
+var save;
 
 function init_canvas()
 {
@@ -177,23 +179,46 @@ function clear_saved_strokes()
 
 function beautify()
 {
-    send_message( 'beautify', stroke_raw );
+    var types = document.getElementById('stroke_type');
+    var type = types[types.selectedIndex].text;
+
+    if (type == 'Shape') {
+        send_message( 'beautify', stroke_raw);
+    } else {
+        send_message( 'new-construction-line', stroke_raw ); 
+    }
+    
+}
+
+function undo()
+{
+    // delete the beautified stroke
+    const elements = document.getElementsByClassName('beautified');
+    const idx = elements.length - 1;
+    if (idx >= 0) {
+        elements[idx].remove();
+    }
+
+    send_message( 'undo ', '' );
 }
 
 function init_widgets()
 {
     document.getElementById('clear_strokes').onclick = function() {
+
         clear_active_stroke();
         clear_saved_strokes();
+
+        var types = document.getElementById('stroke_type');
+        types.selectedIndex = 1
+
+        // I do also want a reset like thing
+        init_WebSocket();
     }
-    document.getElementById('save_stroke').onclick = function() {
-        if( stroke_raw.length > 0 ) {
-            create_polyline( construction_lines, stroke_raw, '#888' ).attr({ "class": "raw" });
-        }
-        if( stroke_beautified.length > 0 ) {
-            create_polyline( construction_lines, stroke_beautified, '#000' ).attr({ "class": "beautified" });
-        }
-        
+    document.getElementById('undo_stroke').onclick = function() {
+        // delete the last added stoke
+        undo();        
+
         clear_active_stroke();
     };
     document.getElementById('reconnect').onclick = function() {
@@ -216,6 +241,8 @@ function init()
     
     draw();
 }
+
+
 function init_WebSocket()
 {
     websocket = new WebSocket(wsUri);
@@ -232,6 +259,18 @@ function onClose(evt)
 {
     writeToScreen("DISCONNECTED");
 }
+
+// I want by default, keep the drawing now to view the lines
+function keep_the_drawing(){
+    // if( stroke_raw.length > 0 ) {
+    //     create_polyline( construction_lines, stroke_raw, '#888' ).attr({ "class": "raw" });
+    //     }
+    if( stroke_beautified.length > 0 ) {
+        create_polyline( construction_lines, stroke_beautified, '#000' ).attr({ "class": "beautified" });
+    }
+    clear_active_stroke();
+}
+
 function onMessage(evt) {
     var t = now();
     
@@ -240,16 +279,22 @@ function onMessage(evt) {
     var command = msg.substr(0,msg.indexOf(' '));
     var body = JSON.parse( msg.substr(msg.indexOf(' ')+1) );
     
-    if( command === 'curve-optimized' )
+    if( command === 'add-construction-line' )
     {
         stroke_beautified = body;
+        keep_the_drawing();
+    }
+    else if ( command === 'add-shape-line' ){
+        stroke_beautified = body;
+        draw();
     }
     else
     {
         console.error( "Unknown WebSocket message received: ", msg );
     }
     
-    draw();
+    
+    //draw();
     
     document.getElementById('status').innerHTML = 'Received command: ' + command;
     
