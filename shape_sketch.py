@@ -70,10 +70,29 @@ def fit_spline( closest_key_points, n, closed = True ):
     x = [pt[0] for pt in closest_key_points]
     y = [pt[1] for pt in closest_key_points]
 
-    tck,u = interpolate.splprep([x, y], k=3, s=0) 
+    '''
+    tck,u = interpolate.splprep([x, y], k=3, s=0)
     u = np.linspace(0,1,num=n,endpoint=True) 
     spline = interpolate.splev(u,tck)
     return spline[0], spline[1]
+    '''
+    
+    ## Let's try an interpolating cubic spline.
+    spline_evaluator = interpolate.CubicSpline(
+        ## We will make the key points evenly spaced.
+        np.linspace( 0, 1, num = len( closest_key_points ) ),
+        ## The key points are the 2D samples.
+        closest_key_points,
+        ## Use natural boundary conditions (second derivative = 0 at the endpoints)
+        ## if not periodic.
+        bc_type = 'periodic' if closed else 'natural'
+        )
+    ## Sample the spline.
+    u = np.linspace(0,1,num=n,endpoint=True)
+    ## The result `spline` is n-by-2 dimensional.
+    spline = spline_evaluator( u )
+    ## We want to return x values, y values, which is the tranpose of `spline`.
+    return spline.T
 
 
 def closest_point_index_to_point(pt, key_points):
