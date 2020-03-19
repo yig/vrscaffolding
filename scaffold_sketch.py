@@ -54,8 +54,9 @@ def incorporate_new_raw_construction_line( state, pts ):
     # print("y", list(snapped_line.xy.T[1]))
     return snapped_line.xy
 
-
-
+def find_key_points( state ):
+    key_points = fit_line.find_all_intersections_and_midpoints( state['construction_lines'] )
+    return key_points
 
 def undo( state ):
     """

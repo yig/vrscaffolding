@@ -5,7 +5,7 @@ import fit_line
 from scipy import linalg,interpolate
 import numpy as np
 
-# distance_threshold = 
+
 
 def incorporate_new_raw_shape_line( state, pts ):
     """
@@ -15,11 +15,11 @@ def incorporate_new_raw_shape_line( state, pts ):
     ### 2 Snap the fit line to existing construction lines.
     ### 3 Store the snapped line as a new construction line in state.
     
-    
     # resample every 10 pixels or is 10px too big?
     shape_curve = util.resample_line_strip_arc_length( pts, 10 )
+
     key_points = fit_line.find_all_intersections_and_midpoints( state['construction_lines'] )
-    print('key_points ', key_points)
+
     # max_dist: max dist between keypoints 
     max_keypoint_dist = max_dist_between_keypoints(key_points)
     

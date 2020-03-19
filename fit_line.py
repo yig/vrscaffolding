@@ -70,7 +70,6 @@ class Line:
         
         self.normal = normal
         self.c      = c
-        self.center = center
         self.xy     = xy
         
 
@@ -82,16 +81,14 @@ class Line:
             xy: line points
             (N+1)-by-2 array of x,y points representing a line
         """
-        a, b = normal =  self.normal
-        center = self.center
-
-        print('update called')
-
-        c = -np.dot(self.normal, center)
+        a, b = normal = self.normal
                 
         x0, y0 = self.xy[0]
         x1, y1 = self.xy[-1]
-        
+        center = np.mean(self.xy, axis = 0)
+        # center = (self.xy[0] + self.xy[-1])/2
+        c = -np.dot(normal, center)
+
         # n for the count
         n = self.xy.shape[0]
 
@@ -121,7 +118,7 @@ class Line:
                 x = (-c - b * y) / a
 
         self.normal = normal
-        self.center = center
+        self.c = c
         self.xy[:,0] = x
         self.xy[:,1] = y
 
@@ -143,6 +140,7 @@ def snap_line_to_other_lines( line, construction_lines ):
     # Maybe I don't want to adjust it according to other lines?
     if  np.array_equal(line.normal, vertical) or np.array_equal(line.normal, horizontal):
         return line
+    
 
     for existing_line in construction_lines:
         normal_dot_product = abs(np.dot(line.normal,existing_line.normal))
@@ -151,7 +149,8 @@ def snap_line_to_other_lines( line, construction_lines ):
             # print("parallel")
             # parallel
             # can I just use this or do I need to be more careful?
-            line.normal = np.array([existing_line.normal[0], existing_line.normal[1]])
+            new_norm = np.array([existing_line.normal[0], existing_line.normal[1]])
+            print("line normal changed form", line.normal, "to", existing_line.normal)
         elif normal_dot_product < threshold:
             # since both (-b, a) or (b, -a) perp (a, b)
             # I find the most close one 
@@ -161,12 +160,11 @@ def snap_line_to_other_lines( line, construction_lines ):
                 line.normal = np.array([-b1, a1])
             else:
                 line.normal = np.array([b1, -a1])
-                
-    
-    # update because normal direction changed
-    line.update()
+            print("line normal changed form", line.normal, "to", existing_line.normal)
 
-    
+                
+    # update because normal direction changed
+    line.update()    
     return line
 
 
@@ -183,69 +181,48 @@ def find_all_intersections_and_midpoints( construction_lines ):
 
     key_points = []
 
-    # for i in range(len(construction_lines)-1, -1, -1):
-    #     cur_line = construction_lines[i]
-    #     a0, b0 = cur_line.normal
-    #     c0 = -cur_line.c
-        
-    #     points = []
-    #     for j in range(i-1, -1, -1):
-    #         prev_line = construction_lines[j]
-    #         a1, b1 = prev_line.normal
-    #         c1 = -prev_line.c
-
-    #         mat_a = np.array([[a0, b0],[a1, b1]])
-    #         # print('i, j, linalg.det(mat_a)', i, j, linalg.det(mat_a))
-    #         # try with this threshold
-    #         # or I need other methods to make sure that I don't computer parallel
-    #         if abs(linalg.det(mat_a)) > 1e-10 :
-    #             c = np.array([c0, c1])
-    #             x, y = linalg.solve( mat_a, c )
-    #             # print('i, j, x, y',i, j, x, y)
-    #             # is this necessary? 
-    #             # I just make sure the point is in line range
-    #             # here I just use the canvas size vaugely
-    #             if  0 <= x <= 500:
-    #                 points.append((int(x), int(y)))
-        
-    #     print('i = ', i)
-    #     print('points = ,', points)
-
     for i in range(len(construction_lines)):
         cur_line = construction_lines[i]
         a0, b0 = cur_line.normal
         c0 = -cur_line.c
-
+        x0, y0 = cur_line.xy[0]
+        x1, y1 = cur_line.xy[-1]
+        
         points = []
 
         for j in range(len(construction_lines)):
             next_line = construction_lines[j]
             a1, b1 = next_line.normal
             c1 = -next_line.c
-            
+
             mat_a = np.array([[a0, b0],[a1, b1]])
-            # try with this threshold
-            # or I need other methods to make sure that I don't computer parallel
-            if abs(linalg.det(mat_a)) > 1e-10 :
+
+            # full rank, can do inverse
+            if np.linalg.matrix_rank(mat_a) == 2:
                 c = np.array([c0, c1])
                 x, y = linalg.solve( mat_a, c )
                 # I just make sure the point is in line range
-                # here I just use the canvas size vaugely
-                if  0 <= x <= 500:
-                    points.append( (round(x), round(y)) )
+                if  (x - x0) * (x1 - x) >= 0 or (y - y0) * (y1 - y) >= 0:
+                # if 0 <= x <= 500:
+                    #points.append( (round(x), round(y)) )
+                    points.append( (x, y) )
         print('i = ', i)
         print('points = ,', points)
 
         # find the intersection points of one line 
         # sort them and find the midpoints
-        points.sort(key=lambda x:x[0]) #To sort by first element of the tuple
+        points.sort(key=lambda pt:(pt[0], pt[1])) #To sort by first element of the tuple
+        # sorted_points = sorted(points,
+        #                  key=lambda x: (x[0], x[1]))
+        
         midpoints = []
         # find the midpoints
         for j in range(len(points)-1):
             p0, p1 = points[j], points[j+1]
             x = (p0[0] + p1[0])/2
             y = (p0[1] + p1[1])/2
-            midpoints.append( (round(x), round(y)) )
+            #midpoints.append( (round(x), round(y)) )
+            midpoints.append( (x, y) )
         
         # add the point and mid point
         for point in points:
@@ -255,7 +232,7 @@ def find_all_intersections_and_midpoints( construction_lines ):
         for point in midpoints:
             if point not in key_points:
                 key_points.append(point)
-        
+    
 
     return key_points
 

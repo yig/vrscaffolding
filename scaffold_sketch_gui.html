@@ -12,6 +12,7 @@
 </div>
 
 <div id="widgets">
+<button id="show_key_points">Show Key Points</button>
 <button id="clear_strokes">Clear Strokes</button>
 <button id="undo_stroke">Undo Stroke</button>
 <button id="reconnect">Reconnect</button>
@@ -233,7 +234,27 @@ function init_widgets()
         if( websocket !== null ) websocket.close( 1000, "Reconnecting." );
         init_WebSocket();
     };
+    // show key points  
+    document.getElementById('show_key_points').onclick = function()
+    {
+        send_message( 'key_points', '');        
+    }
 }
+
+// draw_points
+function draw_points(){
+
+    for (let index = 0; index < stroke_beautified.length; index++) {
+        const element = stroke_beautified[index];
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(element[0], element[1], 2, 2);
+    }
+
+    var types = document.getElementById('stroke_type');
+    types.selectedIndex = 0;
+    
+}
+
 
 // Page based off of: http://www.websocket.org/echo.html
 var wsUri = "ws://localhost:9000";
@@ -274,10 +295,12 @@ function keep_the_drawing(){
     //     create_polyline( construction_lines, stroke_raw, {'stroke': '#888'} ).attr({ "class": "raw" });
     //     }
     if( stroke_beautified.length > 0 ) {
-        create_polyline( construction_lines, stroke_beautified, {'stroke': '#888'} ).attr({ "class": "beautified" });
+        create_polyline( construction_lines, stroke_beautified, {'stroke': '#444'} ).attr({ "class": "beautified" });
     }
     clear_active_stroke();
 }
+
+
 
 function onMessage(evt) {
     var t = now();
@@ -295,6 +318,10 @@ function onMessage(evt) {
     else if ( command === 'add-shape-line' ){
         stroke_beautified = body;
         draw();
+    }
+    else if ( command == 'add-key-points' ){
+        stroke_beautified = body;
+        draw_points();
     }
     else
     {

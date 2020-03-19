@@ -31,6 +31,12 @@ async def scaffold_sketch_server( websocket, path ):
         elif command == "undo":
             # will only undo for last construction line now 
             scaffold_sketch.undo( state )
+        elif command == "key_points":
+           
+            key_points = scaffold_sketch.find_key_points( state )
+            print(state)
+            print(key_points)
+            await websocket.send( "add-key-points " + json.dumps( key_points) )
         elif command == "beautify":
             input_curve = json.loads( parameters )
             new_shape = shape_sketch.incorporate_new_raw_shape_line( state, input_curve )
