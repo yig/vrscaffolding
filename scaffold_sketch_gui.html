@@ -33,6 +33,7 @@ Stroke type:
 
 var construction_lines;
 var shape_curves;
+var key_points;
 // Maybe in the future, the active stroke can also be a manipulated SVG element
 //     polyline.points.append( path.point(x,y) );
 // See: https://stackoverflow.com/questions/25706565/how-do-i-add-coordinates-to-an-svg-polyline
@@ -58,6 +59,7 @@ function init_canvas()
         svg.rect( 500, 500 ).fill({ color: '#f00', opacity: 0.6 });
         construction_lines = svg.group().attr({'class': 'construction'});
         shape_curves = svg.group().attr({'class': 'shape'});
+        key_points = svg.group().attr({'class': 'key_points'});
     }
     
     canvas.onmousedown = canvas_mousedown;
@@ -184,6 +186,7 @@ function clear_saved_strokes()
 {
     construction_lines.clear();
     shape_curves.clear();
+    key_points.clear();
 }
 
 function beautify()
@@ -320,8 +323,11 @@ function onMessage(evt) {
         draw();
     }
     else if ( command == 'add-key-points' ){
-        stroke_beautified = body;
-        draw_points();
+        let points = body;
+        const radius = 5;
+        for( var pt of points ) {
+            key_points.circle( 2*radius ).move( pt[0]-radius, pt[1]-radius ).fill('#fff').opacity(0.5);
+        }
     }
     else
     {
