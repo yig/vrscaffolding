@@ -240,22 +240,17 @@ function init_widgets()
     // show key points  
     document.getElementById('show_key_points').onclick = function()
     {
-        send_message( 'key_points', '');        
+        send_message( 'key_points', '');
     }
 }
 
 // draw_points
 function draw_points(){
-
     for (let index = 0; index < stroke_beautified.length; index++) {
         const element = stroke_beautified[index];
         ctx.fillStyle = "#fff";
         ctx.fillRect(element[0], element[1], 2, 2);
     }
-
-    var types = document.getElementById('stroke_type');
-    types.selectedIndex = 0;
-    
 }
 
 
@@ -328,6 +323,10 @@ function onMessage(evt) {
         for( var pt of points ) {
             key_points.circle( 2*radius ).move( pt[0]-radius, pt[1]-radius ).fill('#fff').opacity(0.5);
         }
+        
+        // Switch to shape strokes.
+        var types = document.getElementById('stroke_type');
+        types.selectedIndex = 0;
     }
     else
     {
