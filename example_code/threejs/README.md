@@ -1,6 +1,6 @@
 From https://developer.oculus.com/documentation/oculus-browser/browser-remote-debugging/ and https://developers.google.com/web/tools/chrome-devtools/remote-debugging/local-server
 
-1. Turn on Developer mode. Get Android Platform Tools. See the above URLs for that.
+1. Turn on Developer mode. Get Android Platform Tools (`brew cask install android-platform-tools`). See the above URLs for that.
 2. Plug your Quest into your computer and authorize it. If you want to debug wirelessly, run the following two extra steps while the cable is attached:
   1. `adb tcpip 5555`
   2. Get the IP address `x.y.z.w` of your Oculus (e.g. `10.0.0.149`).
