@@ -30,6 +30,8 @@
 			var controller1, controller2;
 			var controllerGrip1, controllerGrip2;
 			
+			var scaffold_strokes, shape_strokes;
+			
 			var room;
 
 			var cursor = new THREE.Vector3();
@@ -82,8 +84,16 @@
 				var painter2 = new TubePainter();
 				painter2.setColor( 0xffe0ff );
 				scene.add( painter2.mesh );
+				
+				
+				// Make groups for the user's input
+				scaffold_strokes = new THREE.Group();
+				shape_strokes = new THREE.Group();
+				scene.add( scaffold_strokes );
+				scene.add( shape_strokes );
 
-				//
+
+				// renderer
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
@@ -170,7 +180,7 @@
 				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
 				scene.add( controllerGrip2 );
 
-				//
+				// 
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -189,6 +199,15 @@
                 
                 await socket.connect('ws://localhost:' + port);
                 console.log( "Connected on port " + port + ": ", socket.connected );
+                
+                /*
+                // To simulate an .onmessage() callback:
+                // TODO Q: What happens if you call socket.disconnect() and socket.connect() during an await?
+                while( true ) {
+                    const msg = await socket.receive();
+                    // process the msg
+                }
+                */
                 
                 // The time in seconds since some arbitrary point in time.
                 function now() {
