@@ -1,0 +1,3 @@
+# brew cask install android-platform-tools
+# Download VLC.app and put it in /Applications
+adb exec-out "while true; do screenrecord --bit-rate=2m --output-format=h264 --time-limit 180 -; done" | "/Applications/VLC.app/Contents/MacOS/VLC" --demux h264 --h264-fps=60 --clock-jitter=0 -
