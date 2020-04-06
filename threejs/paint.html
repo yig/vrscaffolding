@@ -33,6 +33,10 @@
 			var scaffold_strokes, shape_strokes;
 			
 			var room;
+			
+			// try pass cursor data to backend
+			var is_painting = false;
+			var cursor_active_stroke = [];
 
 			var cursor = new THREE.Vector3();
 
@@ -53,7 +57,7 @@
 				document.body.appendChild( container );
 
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xe0e0e0 );
+				scene.background = new THREE.Color( 0x222222 );
 
 				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.01, 50 );
 				camera.position.set( 0, 1.6, 3 );
@@ -78,11 +82,11 @@
 				//
 
 				var painter1 = new TubePainter();
-				painter1.setColor( 0xe0e0ff );
+				// painter1.setColor( 0xe0e0ff );
 				scene.add( painter1.mesh );
 
 				var painter2 = new TubePainter();
-				painter2.setColor( 0xffe0ff );
+				// painter2.setColor( 0xffe0ff );
 				scene.add( painter2.mesh );
 				
 				
@@ -205,7 +209,19 @@
                 // TODO Q: What happens if you call socket.disconnect() and socket.connect() during an await?
                 while( true ) {
                     const msg = await socket.receive();
+					cmd = msg.split(0)[0];
+					payload = msg.split(0)[1];
+
                     // process the msg
+					if( cmd == "new-straight-line" ) {
+						const data = JSON.parse( payload );
+					}
+					else if( cmd == "..." ) {
+						...
+					}
+					else {
+						console.error( "Unknown message:", msg );
+					}
                 }
                 */
                 
@@ -215,7 +231,10 @@
                 }
                 while( true ) {
                     const start = now();
-                    socket.send("ping");
+					// socket.send( JSON.stringify(cursor_active_stroke) );
+                    // socket.send("ping");
+
+			
                     const msg = await socket.receive();
                     const duration = now() - start;
                     // console.log( "duration:", duration );
@@ -263,21 +282,36 @@
 
 					pivot.scale.setScalar( scale );
 					painter.setSize( scale );
-
 				}
 
 				cursor.setFromMatrixPosition( pivot.matrixWorld );
 
+
+
 				if ( userData.isSelecting === true ) {
+
+					// can not put is_painting here because the animation will call this function
+					is_painting = true;
 
 					painter.lineTo( cursor );
 					painter.update();
 
+
+					cursor_active_stroke.push(cursor);
 				} else {
+
+					if( is_painting ) {
+						is_painting = false;
+						// A stroke is finished.
+						socket.send( "new-stroke " + JSON.stringify( cursor_active_stroke ) );
+						console.log(cursor_active_stroke.length);
+						console.log( "draw ended" );
+					}
 
 					painter.moveTo( cursor );
 
 				}
+
 
 			}
 
