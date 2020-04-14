@@ -202,6 +202,12 @@ function TubePainter() {
 		count = geometry.drawRange.count;
 
 	}
+	
+	// Clears the geometry. Doesn't affect the size or color.
+	function clear() {
+	    count = 0;
+	    geometry.drawRange.count = 0;
+	}
 
 	return {
 		mesh: mesh,
