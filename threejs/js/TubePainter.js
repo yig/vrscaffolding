@@ -215,7 +215,8 @@ function TubePainter() {
 		lineTo: lineTo,
 		setSize: setSize,
 		setColor: setColor,
-		update: update
+		update: update,
+		clear: clear
 	};
 
 }
