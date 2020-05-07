@@ -33,7 +33,7 @@
 			var scaffold_strokes, shape_strokes;
 			
 			var room;
-			
+
 			// try pass cursor data to backend
 			var cursor = new THREE.Vector3();
 
@@ -43,6 +43,9 @@
 			var avg_duration;
 			var last_durations = [];
 			var last_durations_index = 0;
+
+			let shape_line_mesh;
+			
 
 			init();
 			initWebSocket();
@@ -78,7 +81,7 @@
 				light.position.set( 0, 4, 0 );
 				scene.add( light );
 
-				//
+				
 
 				var painter1 = new TubePainter();
 				// painter1.setColor( 0xe0e0ff );
@@ -145,10 +148,15 @@
 				}
 				function submitStroke() {
 					let userData = this;
-					// A stroke is finished.
-					socket.send( "new-stroke " + JSON.stringify( userData.active_stroke ) );
-					console.log(userData.active_stroke.length);
-					console.log( "draw ended" );
+
+					if ( controllerGrip2.children.length > 1 ) {
+						socket.send( "shape-stroke " + JSON.stringify( userData.active_stroke) );
+					} else {
+						// A stroke is finished.
+						socket.send( "construction-stroke " + JSON.stringify( userData.active_stroke ) );
+						// console.log(userData.active_stroke.length);
+						// console.log( "draw ended" );
+					}
 				}
 
 				controller1 = renderer.xr.getController( 0 );
@@ -174,6 +182,20 @@
 				controller2.userData.selectEnd = submitStroke;
 				scene.add( controller2 );
 
+
+
+
+
+				// controller2 is right hand
+				controller2.addEventListener( 'connected', function( event ) {
+					controller2.userData.XRInputSource = event.data;
+				});
+
+				// I can't bind the event because XRInputSource.gamepad not exist	
+				// controller1.userData.XRInputSource.gamepad.buttons[4].addEventListener("press", function(){
+				// 	console.log();
+				// });
+
 				
 				// Add the pawn geometry for each controller.
 				// This is used in handleController() to set the cursor position.
@@ -189,7 +211,8 @@
 
 				controller1.add( mesh.clone() );
 				controller2.add( mesh.clone() );
-				
+
+
 				
 				// The XRControllerModelFactory will automatically fetch controller models
 				// that match what the user is holding as closely as possible. The models
@@ -206,7 +229,41 @@
 				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
 				scene.add( controllerGrip2 );
 
-				// 
+				// Attach box and sphere to controllerGrip1 -> left controller
+				let box_geometry = new THREE.BoxBufferGeometry(0.08, 0.08, 0.08);
+				let box_material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+				let construction_line_mesh = new THREE.Mesh( box_geometry, box_material );
+				construction_line_mesh.position.x -= 0.1;
+				construction_line_mesh.name = "construction_line_mesh";
+
+				let sphere_geometry = new THREE.SphereGeometry(0.01, 16, 16);
+				let sphere_material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+				shape_line_mesh = new THREE.Mesh( sphere_geometry, sphere_material ); 
+				shape_line_mesh.position.x -= 0.03;
+				shape_line_mesh.name = "shape_line_mesh";
+
+				// controllerGrip1.add( construction_line_mesh );
+				
+
+				// var curve = new THREE.CubicBezierCurve3(
+				// 	new THREE.Vector3(     0,    0, 0 ),
+				// 	new THREE.Vector3( 0, -0.2, 0.2 ),
+				// 	new THREE.Vector3( 	0, 0.3, 0.3 ),
+				// 	new THREE.Vector3( 	   0, 0, 0.6 )
+				// );
+
+				// var points = curve.getPoints( 50 );
+				// var geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+				// var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+				// shape_line_mesh = new THREE.Line( geometry, material );
+
+				scene.add( shape_line_mesh );
+
+
+				// console.log( controller2.children );
+				// console.log( controllerGrip1.children );
+
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -244,7 +301,7 @@
     
                     // process the msg
 					if( cmd == "new-straight-line" ) {
-						console.log( payload );
+						// console.log( payload );
 
 						// clear the drawing 
 
@@ -304,12 +361,27 @@
 
 			}
 
-			//
 
 			function handleController( controller ) {
 
 				var userData = controller.userData;
 				var painter = userData.painter;
+				var XRInputSource = userData.XRInputSource;
+				// console.log( XRInputSource );
+				if (XRInputSource && XRInputSource.gamepad) {
+					if (XRInputSource.gamepad.buttons[4].pressed == true) {
+						// console.log( XRInputSource.gamepad.buttons[4] );
+						// console.log( " pressed ");
+
+						if (controllerGrip2.children.length == 1) {
+							controllerGrip2.add( shape_line_mesh );
+						} else {
+							controllerGrip2.remove( shape_line_mesh );
+						}
+
+					}
+				}
+				
 
 				var pivot = controller.getObjectByName( 'pivot' );
 
@@ -331,7 +403,6 @@
 					painter.lineTo( cursor );
 					painter.update();
 
-					// console.log(cursor);
 					userData.active_stroke.push( cursor.clone() );
 				} else {
 
@@ -410,6 +481,8 @@
 				var zAxis = new THREE.ArrowHelper(zdir, origin, length, blue);
 				scene.add(zAxis);
 			}
+
+
 
 			
 		</script>
