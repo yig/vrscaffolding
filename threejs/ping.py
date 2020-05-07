@@ -20,10 +20,9 @@ async def ping_server( websocket, path ):
         
         if command == "new-stroke":
             input_curve = json.loads( parameters )
-            # print( command )
-
-            new_line = fit_line.line_fitting( input_curve )
-            # print(new_line)
+            
+            new_line = scaffold_sketch.incorporate_new_raw_construction_line( state, input_curve )
+            
             # echo:
             await websocket.send( "new-straight-line " + json.dumps( new_line.tolist() ) )
 

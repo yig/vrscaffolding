@@ -124,7 +124,8 @@
 					if( this.userData.selectEnd !== undefined ) this.userData.selectEnd();
 				}
 
-				function onSequeezeStart() {
+
+				function onSqueezeStart() {
 
 					this.userData.isSqueezing = true;
 					this.userData.positionAtSqueezeStart = this.position.y;
@@ -132,7 +133,7 @@
 
 				}
 
-				function onSqueezeEned() {
+				function onSqueezeEnd() {
 
 					this.userData.isSqueezing = false;
 
@@ -153,8 +154,10 @@
 				controller1 = renderer.xr.getController( 0 );
 				controller1.addEventListener( 'selectstart', onSelectStart );
 				controller1.addEventListener( 'selectend', onSelectEnd );
-				controller1.addEventListener( 'squeezestart', onSequeezeStart );
-				controller1.addEventListener( 'squeezeend', onSqueezeEned );
+				controller1.addEventListener( 'squeezestart', onSqueezeStart );
+				controller1.addEventListener( 'squeezeend', onSqueezeEnd );
+
+
 				controller1.userData.painter = painter1;
 				controller1.userData.active_stroke = [];
 				controller1.userData.selectStart = startStroke;
@@ -164,8 +167,8 @@
 				controller2 = renderer.xr.getController( 1 );
 				controller2.addEventListener( 'selectstart', onSelectStart );
 				controller2.addEventListener( 'selectend', onSelectEnd );
-				controller2.addEventListener( 'squeezestart', onSequeezeStart );
-				controller2.addEventListener( 'squeezeend', onSqueezeEned );
+				controller2.addEventListener( 'squeezestart', onSqueezeStart );
+				controller2.addEventListener( 'squeezeend', onSqueezeEnd );
 				controller2.userData.painter = painter2;
 				controller2.userData.selectStart = startStroke;
 				controller2.userData.selectEnd = submitStroke;
@@ -223,7 +226,14 @@
                 
                 await socket.connect('ws://localhost:' + port);
                 console.log( "Connected on port " + port + ": ", socket.connected );
-                
+
+             	// The time in seconds since some arbitrary point in time.
+			 	function now() {
+                    return ( new Date().getTime() ) / 1000.;
+                }
+       
+
+
                 // To simulate an .onmessage() callback:
                 // TODO Q: What happens if you call socket.disconnect() and socket.connect() during an await?
                 while( true ) {
@@ -234,7 +244,16 @@
     
                     // process the msg
 					if( cmd == "new-straight-line" ) {
-						console.log( payload )
+						console.log( payload );
+
+						// clear the drawing 
+
+						// get the painter and clear the drawing of painter
+						// do not know whether it is good practice here.						
+						controller1.userData.painter.clear();
+						controller2.userData.painter.clear();
+
+						// draw the line 
 						draw_line( payload );
 					}
 					else if( cmd == "..." ) {
@@ -243,20 +262,14 @@
 					else {
 						console.error( "Unknown message:", msg );
 					}
-                }
-                
-                
-                // The time in seconds since some arbitrary point in time.
-                function now() {
-                    return ( new Date().getTime() ) / 1000.;
-                }
-                while( true ) {
-                    const start = now();
+
+
+					const start = now();
 					// socket.send( JSON.stringify(cursor_active_stroke) );
                     // socket.send("ping");
 
 			
-                    const msg = await socket.receive();
+                    //const msg = await socket.receive();
                     const duration = now() - start;
                     // console.log( "duration:", duration );
                     avg_duration = avg_duration !== undefined ? .99*avg_duration + 0.01*duration : duration;
@@ -275,7 +288,11 @@
                         +
                         ', duration: ' + duration.toFixed(4)
                         );
+
                 }
+                
+                
+   
             }
 
 			function onWindowResize() {
