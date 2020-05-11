@@ -45,7 +45,9 @@
 			var last_durations_index = 0;
 
 			let shape_line_mesh;
-			
+
+			// set this to right hand controller grip because I am a right handed 
+			var draw_shape_mode = false;
 
 			init();
 			initWebSocket();
@@ -81,6 +83,7 @@
 				light.position.set( 0, 4, 0 );
 				scene.add( light );
 
+				
 				
 
 				var painter1 = new TubePainter();
@@ -149,7 +152,7 @@
 				function submitStroke() {
 					let userData = this;
 
-					if ( controllerGrip2.children.length > 1 ) {
+					if ( draw_shape_mode == true ) {
 						socket.send( "shape-stroke " + JSON.stringify( userData.active_stroke) );
 					} else {
 						// A stroke is finished.
@@ -183,12 +186,12 @@
 				scene.add( controller2 );
 
 
-
-
-
-				// controller2 is right hand
 				controller2.addEventListener( 'connected', function( event ) {
 					controller2.userData.XRInputSource = event.data;
+				});
+
+				controller1.addEventListener( 'connected', function( event ) {
+					controller1.userData.XRInputSource = event.data;
 				});
 
 				// I can't bind the event because XRInputSource.gamepad not exist	
@@ -229,7 +232,8 @@
 				controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
 				scene.add( controllerGrip2 );
 
-				// Attach box and sphere to controllerGrip1 -> left controller
+				// seems controllerGrip1 and controllerGrip2 is linked with the process of finding controllers
+				// left and right not for sure
 				let box_geometry = new THREE.BoxBufferGeometry(0.08, 0.08, 0.08);
 				let box_material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
 				let construction_line_mesh = new THREE.Mesh( box_geometry, box_material );
@@ -244,25 +248,6 @@
 
 				// controllerGrip1.add( construction_line_mesh );
 				
-
-				// var curve = new THREE.CubicBezierCurve3(
-				// 	new THREE.Vector3(     0,    0, 0 ),
-				// 	new THREE.Vector3( 0, -0.2, 0.2 ),
-				// 	new THREE.Vector3( 	0, 0.3, 0.3 ),
-				// 	new THREE.Vector3( 	   0, 0, 0.6 )
-				// );
-
-				// var points = curve.getPoints( 50 );
-				// var geometry = new THREE.BufferGeometry().setFromPoints( points );
-
-				// var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-				// shape_line_mesh = new THREE.Line( geometry, material );
-
-				scene.add( shape_line_mesh );
-
-
-				// console.log( controller2.children );
-				// console.log( controllerGrip1.children );
 
 
 				window.addEventListener( 'resize', onWindowResize, false );
@@ -313,8 +298,18 @@
 						// draw the line 
 						draw_line( payload );
 					}
-					else if( cmd == "..." ) {
-						//
+					else if( cmd == "new-shape-line" ) {
+						
+						// get the painter and clear the drawing of painter
+						// do not know whether it is good practice here.						
+						controller1.userData.painter.clear();
+						controller2.userData.painter.clear();
+
+						console.log( payload );
+
+						draw_curve( payload );
+
+
 					}
 					else {
 						console.error( "Unknown message:", msg );
@@ -367,16 +362,22 @@
 				var userData = controller.userData;
 				var painter = userData.painter;
 				var XRInputSource = userData.XRInputSource;
-				// console.log( XRInputSource );
 				if (XRInputSource && XRInputSource.gamepad) {
-					if (XRInputSource.gamepad.buttons[4].pressed == true) {
-						// console.log( XRInputSource.gamepad.buttons[4] );
-						// console.log( " pressed ");
+					if (XRInputSource.handedness == "right" && XRInputSource.gamepad.buttons[4].pressed == true) {
+						
+						console.log( XRInputSource.handedness);
 
-						if (controllerGrip2.children.length == 1) {
+
+						if (draw_shape_mode == false) {
 							controllerGrip2.add( shape_line_mesh );
+							controllerGrip1.add( shape_line_mesh );
+
+							draw_shape_mode = true;
 						} else {
 							controllerGrip2.remove( shape_line_mesh );
+							controllerGrip1.remove( shape_line_mesh );
+
+							draw_shape_mode = false;
 						}
 
 					}
@@ -451,6 +452,43 @@
 				var line = new THREE.Line( geometry, material );
 
 				scene.add( line );
+				renderer.render( scene, camera );
+			}
+
+
+			// draw curve using CatmullRomCurve3
+			// https://threejs.org/docs/#api/en/extras/curves/CatmullRomCurve3
+			function draw_curve( payload ){
+
+				if ( payload.length == 0) {
+					return ;
+				}
+
+				var vector_points = [];
+
+				for (let index = 0; index < payload.length; index++) {
+					var pt = payload[index];
+					var vector_point = new THREE.Vector3(pt[0], pt[1], pt[2]);
+					vector_points.push( vector_point );
+				}
+
+				console.log(vector_points);
+
+				var curve = new THREE.CatmullRomCurve3(vector_points);
+				var points = curve.getPoints( 50 );
+				var geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+				var material = new THREE.LineBasicMaterial( { color : 0xffffff,
+															  linewidth: 10, 
+															  linecap: 'round',
+															  linejoin: 'round' 
+															} );
+
+				// Create the final object to add to the scene
+				var curveObject = new THREE.Line( geometry, material );
+
+
+				scene.add( curveObject );
 				renderer.render( scene, camera );
 			}
 

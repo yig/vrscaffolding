@@ -16,7 +16,7 @@ def make_new_program_state():
         'shape_curves'
     '''
     
-    state = { 'construction_lines': [], 'shape_curves': [], 'construction_lines_snap_points': [] }
+    state = { 'construction_lines': [], 'shape_curves': [], 'construction_lines_snap_points': [], 'key_points': [] }
     return state
 
 def incorporate_new_raw_construction_line( state, pts ):
@@ -48,5 +48,10 @@ def incorporate_new_raw_construction_line( state, pts ):
     ### 4 add snap points for new_line
     snapped_points = fit_line.generate_snap_points_for_line( snapped_line, state['construction_lines_snap_points'] )
     state['construction_lines_snap_points'] = snapped_points
+
+
+    ### 5 add key points from new_line
+    key_points = fit_line.generate_key_points_for_line( snapped_line )
+    state['key_points'].extend( key_points )
 
     return snapped_line

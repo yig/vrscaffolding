@@ -7,7 +7,6 @@ z_unit_vec = np.array( [0, 0, 1] )
 horizontal_threshold  = 80 # was 0.1,  may be 10 degre
 vertical_threshold    = 10 # was 0.02, may be 10 degree
 parallel_threshold    = 15 # was 0.01, maybe also 10 degree
-distance_threshold    = 0.05 # 5 cm
 epsilon_threshold     = 1e-5
 
 
@@ -104,9 +103,9 @@ def generate_snap_points_for_line( line, snap_points ):
         line, generate possible snap points for line
     """
     p0, p1 = line
-    if not any(np.array_equal(p0, x) for x in snap_points):
+    if not any(np.allclose(p0, x) for x in snap_points):
         snap_points.append( p0 )
-    if not any(np.array_equal(p0, x) for x in snap_points):
+    if not any(np.allclose(p0, x) for x in snap_points):
         snap_points.append( p1 )
             
     possible_ratio = [0.5, 1.0, 2.0]
@@ -117,17 +116,22 @@ def generate_snap_points_for_line( line, snap_points ):
     for ratio in possible_ratio:
         for dir in possible_dirs:
             p = p0 + dir * length * ratio
-            if not any(np.array_equal(p, x) for x in snap_points):
+            if not any(np.allclose(p, x) for x in snap_points):
                 snap_points.append( p )
             p = p1 + dir * length * ratio
-            if not any(np.array_equal(p, x) for x in snap_points):
+            if not any(np.allclose(p, x) for x in snap_points):
                 snap_points.append( p )
     
     return snap_points
     
 
-
-
+def generate_key_points_for_line( line ):
+    """
+    endpoints and midpoint
+    """
+    p0, p1 = line 
+    p = (p0 + p1)/2
+    return [p0, p1, p]
 
 def possible_direction_respect_to_dir( vec ):
     """
