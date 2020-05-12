@@ -31,7 +31,8 @@ async def ping_server( websocket, path ):
             
             new_shape = shape_sketch.incorporate_new_raw_shape_line( state, input_curve )
 
-            await websocket.send("new-shape-line " + json.dumps( new_shape ))
+            if new_shape:
+                await websocket.send("new-shape-line " + json.dumps( new_shape ))
 
 start_server = websockets.serve( ping_server, "localhost", 9000 )
 asyncio.get_event_loop().run_until_complete( start_server )

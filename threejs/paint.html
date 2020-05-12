@@ -44,10 +44,13 @@
 			var last_durations = [];
 			var last_durations_index = 0;
 
-			let shape_line_mesh;
+			let shape_line_mesh, construction_line_edge;
 
 			// set this to right hand controller grip because I am a right handed 
 			var draw_shape_mode = false;
+
+			// show and hide scaffold lines
+			var show_scaffold = true; 
 
 			init();
 			initWebSocket();
@@ -235,10 +238,8 @@
 				// seems controllerGrip1 and controllerGrip2 is linked with the process of finding controllers
 				// left and right not for sure
 				let box_geometry = new THREE.BoxBufferGeometry(0.08, 0.08, 0.08);
-				let box_material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-				let construction_line_mesh = new THREE.Mesh( box_geometry, box_material );
-				construction_line_mesh.position.x -= 0.1;
-				construction_line_mesh.name = "construction_line_mesh";
+				let edges = new THREE.EdgesGeometry( box_geometry );
+				construction_line_edge = new THREE.LineSegments( edges, new THREE.LineBasicMaterial( { color: 0xffffff } ) );
 
 				let sphere_geometry = new THREE.SphereGeometry(0.01, 16, 16);
 				let sphere_material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
@@ -286,7 +287,6 @@
     
                     // process the msg
 					if( cmd == "new-straight-line" ) {
-						// console.log( payload );
 
 						// clear the drawing 
 
@@ -362,11 +362,13 @@
 				var userData = controller.userData;
 				var painter = userData.painter;
 				var XRInputSource = userData.XRInputSource;
+				// https://www.w3.org/TR/webxr-gamepads-module-1/
 				if (XRInputSource && XRInputSource.gamepad) {
+
+					// switch draw mode
 					if (XRInputSource.handedness == "right" && XRInputSource.gamepad.buttons[4].pressed == true) {
 						
 						console.log( XRInputSource.handedness);
-
 
 						if (draw_shape_mode == false) {
 							controllerGrip2.add( shape_line_mesh );
@@ -379,8 +381,34 @@
 
 							draw_shape_mode = false;
 						}
-
 					}
+
+					if (XRInputSource.handedness == "right" && XRInputSource.gamepad.buttons[5].pressed == true) {
+						
+						if (show_scaffold == true) {
+							show_scaffold = false;
+						} else {
+							show_scaffold = true;
+						}
+
+
+						if (show_scaffold == false) {
+
+							scaffold_strokes.traverse ( function (child) {
+    							if (child instanceof THREE.Line) {
+       								child.visible = false;
+								}
+							});
+
+						} else {
+							scaffold_strokes.traverse ( function (child) {
+    							if (child instanceof THREE.Line) {
+       								child.visible = true;
+								}
+							});
+						}
+					}
+
 				}
 				
 
@@ -451,7 +479,9 @@
 				
 				var line = new THREE.Line( geometry, material );
 
-				scene.add( line );
+				
+				scaffold_strokes.add( line );
+				//scene.add( line );
 				renderer.render( scene, camera );
 			}
 
@@ -464,31 +494,25 @@
 					return ;
 				}
 
-				var vector_points = [];
+				var points = [];
 
 				for (let index = 0; index < payload.length; index++) {
 					var pt = payload[index];
 					var vector_point = new THREE.Vector3(pt[0], pt[1], pt[2]);
-					vector_points.push( vector_point );
+					points.push( vector_point );
 				}
 
-				console.log(vector_points);
+				console.log(points);
 
-				var curve = new THREE.CatmullRomCurve3(vector_points);
-				var points = curve.getPoints( 50 );
+				var material = new THREE.LineBasicMaterial( { color : 0xffffff, linewidth: 10, } );
+				
 				var geometry = new THREE.BufferGeometry().setFromPoints( points );
-
-				var material = new THREE.LineBasicMaterial( { color : 0xffffff,
-															  linewidth: 10, 
-															  linecap: 'round',
-															  linejoin: 'round' 
-															} );
-
+											
 				// Create the final object to add to the scene
-				var curveObject = new THREE.Line( geometry, material );
+				var curve = new THREE.Line( geometry, material );
 
 
-				scene.add( curveObject );
+				shape_strokes.add( curve );
 				renderer.render( scene, camera );
 			}
 

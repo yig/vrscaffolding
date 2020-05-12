@@ -29,6 +29,12 @@ def incorporate_new_raw_shape_line( state, curve ):
     pts[:, 2] = zi
 
 
+    # at least we got more than 2 points
+
+    if n < 2:
+        return 
+
+
     closest_key_point_indices = []
 
     for pt in pts:
@@ -50,14 +56,24 @@ def incorporate_new_raw_shape_line( state, curve ):
     # ndarray to list
     closest_key_points = [ key_points[i].tolist() for i in closest_key_point_indices ]
 
-    if np.linalg.norm(pts[0] - pts[-1]) < distance_threshold:
-        closest_key_points.append( closest_key_points[0] )
- 
+    # this is not a good idea
+    # should consider a better way to close curve
+    close_curve = np.linalg.norm(pts[0] -  pts[-1]) < distance_threshold
 
-    print('closest_key_points ', closest_key_points)
+    # print(' close_curve', close_curve)
+    # print('closest_key_points ', closest_key_points)
+    
+    x, y, z = fit_spline(closest_key_points, n)
+    
+    shape_points = []
+    for i in range(n):
+        shape_points.append( [x[i], y[i], z[i]])
 
-    return closest_key_points
 
+    # print('shape_points', shape_points)
+    return shape_points
+
+    
 
 def fit_spline( closest_key_points, n, closed = True ):
     """
@@ -92,7 +108,7 @@ def closest_point_index_to_point(pt, key_points):
     key_point_index = 0
     key_point_dist  = float('inf') 
     for i in range(len(key_points)):
-        if np.linalg.norm(pt - key_points[i])< key_point_dist:
+        if np.linalg.norm(pt - key_points[i]) < key_point_dist:
             key_point_dist = np.linalg.norm(key_points[i] - pt)
             key_point_index = i
     return key_point_index
