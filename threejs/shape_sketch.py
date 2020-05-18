@@ -28,13 +28,6 @@ def incorporate_new_raw_shape_line( state, curve ):
     pts[:, 1] = yi
     pts[:, 2] = zi
 
-
-    # at least we got more than 2 points
-
-    if n < 2:
-        return 
-
-
     closest_key_point_indices = []
 
     for pt in pts:
@@ -49,7 +42,10 @@ def incorporate_new_raw_shape_line( state, curve ):
             continue
         closest_key_point_indices.append( key_point_index )
     
-    assert( len(closest_key_point_indices) > 0 )
+    if len(closest_key_point_indices) <= 1:
+        return 
+    # do not use asset to 
+    # assert( len(closest_key_point_indices) > 0 )
 
     print(closest_key_point_indices)
     # closest_key_points = [ key_points[i] for i in closest_key_point_indices ]
@@ -63,7 +59,7 @@ def incorporate_new_raw_shape_line( state, curve ):
     # print(' close_curve', close_curve)
     # print('closest_key_points ', closest_key_points)
     
-    x, y, z = fit_spline(closest_key_points, n)
+    x, y, z = fit_spline(closest_key_points, n, close_curve)
     
     shape_points = []
     for i in range(n):
