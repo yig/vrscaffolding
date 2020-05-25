@@ -200,14 +200,15 @@
 				
 				// Add the pawn geometry for each controller.
 				// This is used in handleController() to set the cursor position.
-				var geometry = new THREE.CylinderBufferGeometry( 0.01, 0.02, 0.08, 5 );
+				var geometry = new THREE.CylinderBufferGeometry( 0.01, 0.02, 0.07, 5 );
 				geometry.rotateX( - Math.PI / 2 );
 				var material = new THREE.MeshStandardMaterial( { flatShading: true } );
 				var mesh = new THREE.Mesh( geometry, material );
+				mesh.position.z = -0.02;
 
 				var pivot = new THREE.Mesh( new THREE.IcosahedronBufferGeometry( 0.01, 2 ) );
 				pivot.name = 'pivot';
-				pivot.position.z = - 0.05;
+				pivot.position.z = - 0.04;
 				mesh.add( pivot );
 
 				controller1.add( mesh.clone() );
@@ -242,14 +243,12 @@
 				loader.load( 'js/fonts/helvetiker_regular.typeface.json', function ( font ) {
 					var geometry = new THREE.TextGeometry( 'undo', {
 						font: font,
-						size: 0.01,
+						size: 0.008,
 						height: 0.001,
 					} );
-					undo_text_mesh = new THREE.Mesh(geometry);
-					undo_text_mesh.position.z += 0.08;
-					// undo_text_mesh.position.y -= 0.02;
-					undo_text_mesh.name = 'undo';
 
+					undo_text_mesh = new THREE.Mesh(geometry);
+					undo_text_mesh.name = 'undo';
 				} );
 
 
@@ -372,25 +371,77 @@
 
 			}
 
+			function clone_gamepad( gamepad ) {
+                // There are a few ways to clone an object or array in javascript.
+                // From: https://stackoverflow.com/questions/122102/what-is-the-most-efficient-way-to-deep-clone-an-object-in-javascript
+                // From: https://stackoverflow.com/questions/3978492/fastest-way-to-duplicate-an-array-in-javascript-slice-vs-for-loop
+
+                // The simplest way:
+                // return JSON.parse(JSON.stringify(gamepad));
+
+
+                // A more complex way:
+                // Use the spread operator to make a shallow copy of gamepad.
+                let result = {...gamepad};
+                // gamepad contains two arrays. Copy them with their own spread operators.
+                result.axes = [ ...gamepad.axes ];
+                result.buttons = [];
+
+				for (let index = 0; index < gamepad.buttons.length; index++) {
+					var button_copy = {};
+					button_copy.pressed = gamepad.buttons[index].pressed;
+					button_copy.touched = gamepad.buttons[index].touched;
+					button_copy.value = gamepad.buttons[index].value;
+
+					result.buttons.push( button_copy );
+				}
+                return result;
+			
+			}
 
 			function handleController( controller ) {
 
 				var userData = controller.userData;
 				var painter = userData.painter;
 				var XRInputSource = userData.XRInputSource;
+                // Get last frame's gamepad for this controller.
+                let previous_gamepad = userData.previous_gamepad; // will be undefined for the very first frame.
 
+                if( XRInputSource !== undefined && XRInputSource.gamepad !== undefined ) {
+                    // Clone the current gamepad for the next time handleController( controller ) is called.
+                    // WARNING: Don't access userData.previous_gamepad in this function, because we've
+                    //          already updated it to the current values. Instead, use the local variable
+                    //          `previous_gamePad` created a few lines up.
+                    userData.previous_gamepad = clone_gamepad( XRInputSource.gamepad );
+                }
+
+
+				// If I do console.log(XRInputSource), it is undefined at the begining. 		
+				// that's why check the existence of it
 				// https://www.w3.org/TR/webxr-gamepads-module-1/
 				if ( XRInputSource && XRInputSource.handedness === "left") {
 					if (controller.getObjectByName('undo') === undefined ) {
 						controller.add( undo_text_mesh );
+
+						// attach to buttons[1]
+						undo_text_mesh.position.set(0.02, -0.02, 0.06);
+						undo_text_mesh.geometry.rotateY(Math.PI/2);
+						undo_text_mesh.geometry.rotateX(-Math.PI/6);
 					}
+
+
+					// send undo
+					if (XRInputSource.gamepad.buttons[1].pressed && !previous_gamepad.buttons[1].pressed ) {
+						console.log(" left undo button pressed ");
+					}
+
 				}
 
 
-				if (XRInputSource && XRInputSource.gamepad) {
+				if (XRInputSource && XRInputSource.handedness === "right" ) {
 
 					// switch draw mode
-					if (XRInputSource.handedness === "right" && XRInputSource.gamepad.buttons[4].pressed === true) {
+					if (XRInputSource.gamepad.buttons[4].pressed  && !previous_gamepad.buttons[4].pressed ) {
 
 						if (draw_descriptive_mode === false) {
 							// add the descriptive_mode_indicator to right controller
@@ -402,7 +453,7 @@
 						}
 					}
 
-					if (XRInputSource.handedness === "right" && XRInputSource.gamepad.buttons[5].pressed === true) {
+					if (XRInputSource.gamepad.buttons[5].pressed && !previous_gamepad.buttons[5].pressed ) {
 						
 						// show/hide scaffold
 						if (show_scaffold === true) {

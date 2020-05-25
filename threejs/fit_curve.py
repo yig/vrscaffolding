@@ -1,11 +1,10 @@
-import fit_line
 import numpy as np
 from scipy import interpolate
 
 distance_threshold    = 0.05 # 5 cm
 
 
-def incorporate_new_raw_shape_line( state, curve ):
+def shape_line_from_keypoints( state, curve ):
     """
     """
     ### 1. Preprocessing. Find key points

@@ -7,8 +7,6 @@ import websockets
 import json
 
 import scaffold_sketch
-import fit_line
-import shape_sketch
 
 async def ping_server( websocket, path ):
     state = scaffold_sketch.make_new_program_state()
@@ -29,7 +27,7 @@ async def ping_server( websocket, path ):
         elif command == "shape-stroke":
             input_curve = json.loads(parameters)
             
-            new_shape = shape_sketch.incorporate_new_raw_shape_line( state, input_curve )
+            new_shape = scaffold_sketch.incorporate_new_raw_shape_line( state, input_curve )
 
             if new_shape:
                 await websocket.send("new-shape-line " + json.dumps( new_shape ))

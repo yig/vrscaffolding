@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 import fit_line
+import fit_curve
 
 '''
 This module stores the state for the scaffold sketching program.
@@ -55,3 +56,23 @@ def incorporate_new_raw_construction_line( state, pts ):
     state['key_points'].extend( key_points )
 
     return snapped_line
+
+def incorporate_new_raw_shape_line( state, pts ):
+    '''
+    Given:
+        state: a state as returned by `make_new_program_state`
+        pts: raw points from the GUI as a sequence of (x,y,z?) triplets.
+    Returns:
+        curve: curve points
+    
+    Modified `state` to add a new construction line based off
+    of the raw GUI input `pts`.
+    '''
+    ### 1 Fit a curve to the points.
+    ### 2 Store all curve points in state.
+
+    curve = fit_curve.shape_line_from_keypoints( state, pts )
+
+    state['shape_curves'].append( curve )
+
+    return curve
