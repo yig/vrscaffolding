@@ -1,6 +1,7 @@
 *.pyo
 *.pyc
 __pycache__
+.DS_Store
 
 /beautify_debug.py
 /close_curve_debug.py
